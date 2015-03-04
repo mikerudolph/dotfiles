@@ -3,6 +3,9 @@ export EDITOR="vim"
 # Don’t clear the screen after quitting a manual page
 export MANPAGER="less -X"
 
+# CASK
+export HOMEBREW_CASK_OPTS="--appdir=/Applications --caskroom=/etc/Caskroom"
+
 # Larger bash history (allow 32³ entries; default is 500)
 export HISTSIZE=32768
 export HISTFILESIZE=$HISTSIZE
@@ -15,3 +18,14 @@ export HISTTIMEFORMAT
 
 # Make some commands not show up in history
 export HISTIGNORE="ls:ls *:cd:cd -:pwd;exit:date:* --help"
+
+# GOLANGGG
+export GOPATH="/Users/mrudolph/go"
+
+# POSTGRES
+export PGDATA="/usr/local/var/postgres"
+
+# ANDROID
+export ANDROID_HOME=/Applications/Android\ Studio.app/sdk
+
+export PATH="/usr/local/bin:$GOPATH/bin:$ANDROID_HOME/bin::$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$PATH"

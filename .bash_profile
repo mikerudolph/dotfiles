@@ -1,12 +1,12 @@
 # Load ~/.extra, ~/.bash_prompt, ~/.exports, ~/.aliases and ~/.functions
 # ~/.extra can be used for settings you don’t want to commit
 for file in ~/.{extra,bash_prompt,exports,aliases,functions}; do
-	[ -r "$file" ] && source "$file"
+    [ -r "$file" ] && source "$file"
 done
 unset file
 
 # init z   https://github.com/rupa/z
-. ~/code/z/z.sh
+. ~/dev/z/z.sh
 
 # bash completion.
 if [ -f $(brew --prefix)/share/bash-completion/bash_completion ]; then
@@ -42,5 +42,4 @@ export LANG="en_US"
 [ -e "$HOME/.ssh/config" ] && complete -o "default" -o "nospace" -W "$(grep "^Host" ~/.ssh/config | grep -v "[?*]" | cut -d " " -f2)" scp sftp ssh
 
 # Add tab completion for `defaults read|write NSGlobalDomain`
-# You could just use `-g` instead, but I like being explicit
 complete -W "NSGlobalDomain" defaults

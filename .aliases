@@ -1,34 +1,21 @@
-# Easier navigation: .., ..., ~ and -
 alias ..="cd .."
-alias cd..="cd .."
-alias ...="cd ../.."
-alias ....="cd ../../.."
-alias .....="cd ../../../.."
-alias ~="cd ~" # `cd` is probably faster to type though
-alias -- -="cd -"
 
-# the subl symlink was probably set up already but in case it wasn't…
-# ln -s "/Applications/Sublime Text 2.app/Contents/SharedSupport/bin/subl" ~/bin/subl
+alias clr="clear"
 
-
-# i <3 u cask
 alias cask='brew cask'
 
-# be nice
 alias please=sudo
-alias hosts='sudo $EDITOR /etc/hosts'   # yes I occasionally 127.0.0.1 twitter.com ;)
+alias hosts='sudo $EDITOR /etc/hosts'
 
 # handy things
-alias bunyip='node ~/code/bunyip/cli.js'
-alias spotify="osascript ~/code/SpotifyControl/SpotifyControl.scpt"
-alias vlc="osascript ~/code/VLCControl/VLCControl.scpt"
-
+alias bunyip='node ~/dev/bunyip/cli.js'
+alias spotify="osascript ~/dev/SpotifyControl/SpotifyControl.scpt"
 
 # Detect which `ls` flavor is in use
 if ls --color > /dev/null 2>&1; then # GNU `ls`
-	colorflag="--color"
+    colorflag="--color"
 else # OS X `ls`
-	colorflag="-G"
+    colorflag="-G"
 fi
 
 # ls options: Use color even with piping to awk, F = put `/` after folders, h = byte unit suffixes, color
@@ -51,8 +38,8 @@ alias lsd='ls -l | grep "^d"'
 
 
 
-# `cat` with beautiful colors. requires Pygments installed.
-# 							   sudo easy_install -U Pygments
+# `cat` with beautiful colors. requires Pygments installed
+# sudo easy_install -U Pygments
 alias c='pygmentize -O style=monokai -f console256 -g'
 
 # GIT STUFF
@@ -117,7 +104,6 @@ for method in GET HEAD POST PUT DELETE TRACE OPTIONS; do
 	alias "$method"="lwp-request -m '$method'"
 done
 
-# Stuff I never really use but cannot delete either because of http://xkcd.com/530/
 alias stfu="osascript -e 'set volume output muted true'"
 alias pumpitup="osascript -e 'set volume 10'"
 alias hax="growlnotify -a 'Activity Monitor' 'System error' -m 'WTF R U DOIN'"

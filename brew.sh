@@ -49,6 +49,11 @@ brew install tree
 brew install zopfli
 brew install ffmpeg --with-libvpx
 brew install android-platform-tools
+brew install gradle
+brew install grails
+brew install postgres
+brew install redis
+brew install mongodb
 
 # Remove outdated versions from the cellar
 brew cleanup

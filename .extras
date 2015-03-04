@@ -1,0 +1,4 @@
+# SAUCELABS
+export SAUCE_USERNAME=mikerudolph
+export SAUCE_ACCESS_KEY=6bd95290-796c-4bc0-83eb-858168e971cf
+
