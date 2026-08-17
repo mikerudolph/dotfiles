@@ -1,0 +1,12 @@
+# Machine-local configuration and secret-bearing files.
+*.local
+.env
+.env.*
+!.env.example
+*.secret
+secrets/
+
+# Editor and operating-system noise.
+.DS_Store
+*.swp
+

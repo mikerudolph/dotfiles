@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES_ROOT="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+export DOTFILES_ROOT
+source "$DOTFILES_ROOT/lib/paths.sh"
+source "$DOTFILES_ROOT/lib/platform.sh"
+source "$DOTFILES_ROOT/lib/packages.sh"
+source "$DOTFILES_ROOT/lib/onepassword.sh"
+
+dry_run=0
+case "${1:-}" in
+  "") ;;
+  --dry-run) dry_run=1 ;;
+  -h|--help) echo "Usage: ./setup [--dry-run]"; exit 0 ;;
+  *) echo "Unknown option: $1" >&2; exit 2 ;;
+esac
+
+dotfiles_paths_init
+platform_detect || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+platform_validate_supported || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+
+printf 'Detected %s.\n' "$(platform_label)"
+if ! onepassword_desktop_present; then
+  echo "1Password Desktop was not detected." >&2
+  echo "Install it, sign in, unlock it, and run ./setup again." >&2
+  [[ "$dry_run" == "1" ]] || exit 1
+fi
+
+bootstrap_package_backend "$dry_run"
+if [[ "$dry_run" == "1" ]]; then
+  exec "$DOTFILES_ROOT/bin/apply" --dry-run
+else
+  exec "$DOTFILES_ROOT/bin/apply"
+fi
+

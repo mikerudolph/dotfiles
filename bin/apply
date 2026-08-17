@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+DOTFILES_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)"
+export DOTFILES_ROOT
+
+# shellcheck source=../lib/paths.sh
+source "$DOTFILES_ROOT/lib/paths.sh"
+source "$DOTFILES_ROOT/lib/platform.sh"
+source "$DOTFILES_ROOT/lib/logging.sh"
+source "$DOTFILES_ROOT/lib/files.sh"
+source "$DOTFILES_ROOT/lib/packages.sh"
+source "$DOTFILES_ROOT/lib/mise.sh"
+source "$DOTFILES_ROOT/lib/macos.sh"
+source "$DOTFILES_ROOT/lib/macos-defaults.sh"
+source "$DOTFILES_ROOT/lib/onepassword.sh"
+source "$DOTFILES_ROOT/lib/state.sh"
+source "$DOTFILES_ROOT/lib/migrations.sh"
+source "$DOTFILES_ROOT/packages/macos.sh"
+source "$DOTFILES_ROOT/platform/macos/defaults.sh"
+source "$DOTFILES_ROOT/lib/desired.sh"
+
+DOTFILES_DRY_RUN=0
+while (( $# > 0 )); do
+  case "$1" in
+    --dry-run) DOTFILES_DRY_RUN=1 ;;
+    -h|--help)
+      echo "Usage: bin/apply [--dry-run]"
+      exit 0
+      ;;
+    *) echo "Unknown option: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+export DOTFILES_DRY_RUN
+
+dotfiles_paths_init
+platform_detect || {
+  echo "$PLATFORM_ERROR" >&2
+  exit 1
+}
+platform_validate_supported || {
+  echo "$PLATFORM_ERROR" >&2
+  exit 1
+}
+if [[ "$OS" == "macos" ]] && find_brew >/dev/null 2>&1; then
+  activate_brew_environment || {
+    echo "The detected $(brew_backend_name) installation could not initialize its shell environment" >&2
+    exit 1
+  }
+fi
+report_init
+
+declare_package() {
+  ensure_package "$@" || true
+}
+
+declare_managed_file() {
+  local name="$1"
+  shift
+  ensure_symlink "$@" || true
+}
+
+declare_mise_tool() {
+  ensure_mise_tool "$@" || true
+}
+
+declare_macos_app() {
+  ensure_macos_app_store_app "$@" || true
+}
+
+declare_macos_cask() {
+  ensure_macos_cask "$@" || true
+}
+
+declare_direct_macos_app() {
+  ensure_direct_macos_app "$@" || true
+}
+
+declare_macos_default() {
+  ensure_macos_default "$@" || true
+}
+
+declare_macos_host_default() {
+  ensure_macos_host_default "$@" || true
+}
+
+declare_macos_symbolic_hotkey() {
+  ensure_macos_symbolic_hotkey "$@" || true
+}
+
+declare_macos_workspace_count() {
+  check_macos_workspace_count "$@" || true
+}
+
+declare_macos_dark_mode() {
+  ensure_macos_dark_mode "$@" || true
+}
+
+declare_macos_visible_directory() {
+  ensure_macos_visible_directory "$@" || true
+}
+
+declare_command_line_tools() {
+  ensure_command_line_tools || true
+}
+
+declare_xcode_developer_directory() {
+  ensure_xcode_developer_directory || true
+}
+
+declare_rosetta() {
+  ensure_rosetta || true
+}
+
+declare_git_include() {
+  ensure_git_include "$@" || true
+}
+
+declare_shell_block() {
+  ensure_source_block "$@" || true
+}
+
+reconcile_desired_state
+report_render
+
+(( ${#REPORT_CONFLICT[@]} == 0 )) || exit 3

@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+DOTFILES_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)"
+export DOTFILES_ROOT
+source "$DOTFILES_ROOT/lib/paths.sh"
+source "$DOTFILES_ROOT/lib/platform.sh"
+source "$DOTFILES_ROOT/lib/logging.sh"
+source "$DOTFILES_ROOT/lib/files.sh"
+source "$DOTFILES_ROOT/lib/packages.sh"
+source "$DOTFILES_ROOT/lib/mise.sh"
+source "$DOTFILES_ROOT/lib/macos.sh"
+source "$DOTFILES_ROOT/lib/macos-defaults.sh"
+source "$DOTFILES_ROOT/lib/onepassword.sh"
+source "$DOTFILES_ROOT/lib/state.sh"
+source "$DOTFILES_ROOT/lib/migrations.sh"
+source "$DOTFILES_ROOT/packages/macos.sh"
+source "$DOTFILES_ROOT/platform/macos/defaults.sh"
+source "$DOTFILES_ROOT/lib/desired.sh"
+
+dotfiles_paths_init
+report_init
+DOTFILES_DRY_RUN=1
+export DOTFILES_DRY_RUN
+
+platform_ok=yes
+if ! platform_detect; then
+  platform_ok=no
+elif ! platform_validate_supported; then
+  platform_ok=no
+fi
+if [[ "$platform_ok" == "yes" && "${OS:-}" == "macos" ]] && find_brew >/dev/null 2>&1; then
+  activate_brew_environment || true
+fi
+
+echo "Dotfiles doctor"
+printf '  Repository: %s\n' "$DOTFILES_ROOT"
+printf '  Platform:   %s\n' "$(platform_label)"
+printf '  OS:         %s\n' "${OS:-unknown}"
+printf '  Distro:     %s\n' "${DISTRO:--}"
+printf '  Flavor:     %s\n' "${FLAVOR:--}"
+printf '  Supported:  %s\n' "$platform_ok"
+[[ "$platform_ok" == "yes" ]] || printf '  Reason:     %s\n' "${PLATFORM_ERROR:-unknown}"
+printf '  Shell:      %s\n' "${SHELL:-unknown}"
+echo
+
+echo "XDG paths"
+printf '  Config: %s\n' "$DOTFILES_CONFIG_HOME"
+printf '  Data:   %s\n' "$DOTFILES_DATA_HOME"
+printf '  State:  %s\n' "$DOTFILES_STATE_HOME"
+printf '  Cache:  %s\n' "$DOTFILES_CACHE_HOME"
+echo
+
+echo "Foundational tooling"
+printf '  Package backend: %s\n' "$(package_backend_name)"
+if [[ "${OS:-}" == "macos" ]]; then
+  if brew_path="$(find_brew 2>/dev/null)"; then
+    printf '  Homebrew:        %s (%s)\n' "$brew_path" "$("$brew_path" --prefix 2>/dev/null || echo prefix-unavailable)"
+  else
+    echo "  Homebrew:        missing"
+  fi
+elif [[ "${FLAVOR:-}" == "omarchy" ]]; then
+  if helper="$(find_omarchy_package_helper 2>/dev/null)"; then
+    printf '  Omarchy packages: %s\n' "$helper"
+  else
+    echo "  Omarchy packages: missing"
+  fi
+fi
+command -v mise >/dev/null 2>&1 && echo "  mise:            available" || echo "  mise:            missing"
+command -v op >/dev/null 2>&1 && echo "  1Password CLI:   available" || echo "  1Password CLI:   missing"
+onepassword_desktop_present && echo "  1Password app:   detected" || echo "  1Password app:   not detected"
+echo "  CLI integration: manual verification required (doctor never prompts for vault access)"
+echo
+
+echo "Managed file destinations"
+declare_managed_file() {
+  local name="$1" source="$2" destination="$3" label="$4" status
+  if [[ ! -e "$destination" && ! -L "$destination" ]]; then
+    status="missing"
+  elif is_managed "$destination"; then
+    status="managed"
+  else
+    status="CONFLICT (unmanaged)"
+  fi
+  printf '  %-12s %s — %s\n' "$name" "$(dotfiles_pretty_path "$destination")" "$status"
+}
+desired_managed_files
+echo
+
+read -r migrations_complete migrations_total <<<"$(migration_counts)"
+echo "Migration state"
+printf '  %s of %s migrations complete\n' "$migrations_complete" "$migrations_total"
+echo
+
+echo "Local overrides"
+for override in "$HOME/.zshrc.local" "$HOME/.zprofile.local" "$HOME/.bashrc.local"; do
+  if [[ -e "$override" ]]; then status=present; else status=absent; fi
+  printf '  %-20s %s\n' "$(dotfiles_pretty_path "$override")" "$status"
+done
+echo
+
+if [[ "$platform_ok" == "yes" ]]; then
+  declare_package() { ensure_package "$@" || true; }
+  declare_mise_tool() { ensure_mise_tool "$@" || true; }
+  declare_macos_app() { ensure_macos_app_store_app "$@" || true; }
+  declare_macos_cask() { ensure_macos_cask "$@" || true; }
+  declare_direct_macos_app() { ensure_direct_macos_app "$@" || true; }
+  declare_macos_default() { ensure_macos_default "$@" || true; }
+  declare_macos_host_default() { ensure_macos_host_default "$@" || true; }
+  declare_macos_symbolic_hotkey() { ensure_macos_symbolic_hotkey "$@" || true; }
+  declare_macos_workspace_count() { check_macos_workspace_count "$@" || true; }
+  declare_macos_dark_mode() { ensure_macos_dark_mode "$@" || true; }
+  declare_macos_visible_directory() { ensure_macos_visible_directory "$@" || true; }
+  declare_command_line_tools() { ensure_command_line_tools || true; }
+  declare_xcode_developer_directory() { ensure_xcode_developer_directory || true; }
+  declare_rosetta() { ensure_rosetta || true; }
+  declare_managed_file() { local name="$1"; shift; ensure_symlink "$@" || true; }
+  declare_git_include() { ensure_git_include "$@" || true; }
+  declare_shell_block() { ensure_source_block "$@" || true; }
+  reconcile_desired_state
+  report_section "Pending installs" ${REPORT_INSTALL[@]+"${REPORT_INSTALL[@]}"}
+  report_section "Pending file changes" ${REPORT_LINK[@]+"${REPORT_LINK[@]}"} ${REPORT_CONFIGURE[@]+"${REPORT_CONFIGURE[@]}"}
+  report_section "Conflicts" ${REPORT_CONFLICT[@]+"${REPORT_CONFLICT[@]}"}
+  report_section "Manual checks" ${REPORT_MANUAL[@]+"${REPORT_MANUAL[@]}"}
+fi
+
+[[ "$platform_ok" == "yes" ]] || exit 1
+(( ${#REPORT_CONFLICT[@]} == 0 )) || exit 3

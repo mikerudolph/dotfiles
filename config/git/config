@@ -1,0 +1,3 @@
+# Shared Git settings belong here. Identity, credential helpers, work-specific
+# includes, and other machine-local state remain in the including local file.
+
