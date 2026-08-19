@@ -62,6 +62,10 @@ desired_macos_state() {
 }
 
 desired_managed_files() {
+  declare_managed_file "gh-shim" \
+    "$DOTFILES_ROOT/config/bin/gh" \
+    "$HOME/.local/bin/gh" \
+    "1Password-backed GitHub CLI shim"
   declare_managed_file "mise" \
     "$DOTFILES_ROOT/config/mise/config.toml" \
     "$DOTFILES_CONFIG_HOME/mise/config.toml" \

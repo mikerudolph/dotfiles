@@ -129,6 +129,14 @@ integration remain manual. Doctor prints the current platform-specific action:
 Future secrets should use scoped, on-demand mechanisms such as `op run` or
 `op read`; they should not be exported wholesale during shell startup.
 
+GitHub CLI authentication uses a managed executable shim at `~/.local/bin/gh`,
+not a shell alias. The shim removes its own directory from `PATH` and runs the
+real GitHub CLI through `op plugin run -- gh`. As a result, Claude Code, Codex,
+scripts, and interactive shells all receive the same scoped 1Password credential
+without storing a second token through `gh auth login` or exporting `GH_TOKEN`
+to the parent shell. Run `op plugin init gh` once and choose the intended global
+credential; sourcing 1Password's generated `gh` alias is unnecessary.
+
 ## macOS developer prerequisites
 
 Xcode is declared by its Mac App Store ID and obtained through `mas get` when the

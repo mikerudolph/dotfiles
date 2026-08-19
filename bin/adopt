@@ -17,6 +17,7 @@ if [[ -z "$target" || "$target" == "--help" || "$target" == "-h" ]]; then
   echo "Usage: bin/adopt <configuration>"
   echo
   echo "Available configurations:"
+  echo "  gh-shim"
   echo "  mise"
   echo "  nvim"
   if [[ "${OS:-}" == "macos" ]]; then

@@ -62,10 +62,51 @@ package_backend_name() {
   esac
 }
 
+package_command_available() {
+  local command_name="$1" command_path path_entry target target_directory resolved_target
+  command_path="$(command -v "$command_name" 2>/dev/null || true)"
+  [[ -n "$command_path" ]] || return 1
+
+  # Managed command shims must not satisfy their own underlying package check.
+  # When gh resolves to ~/.local/bin/gh, look for another executable later in
+  # PATH before declaring the GitHub CLI package present.
+  if [[ "$command_path" == "$HOME/.local/bin/$command_name" && -L "$command_path" ]]; then
+    target="$(readlink "$command_path")"
+    case "$target" in
+      /*) ;;
+      *) target="$(dirname -- "$command_path")/$target" ;;
+    esac
+    target_directory="$(dirname -- "$target")"
+    if [[ -d "$target_directory" ]]; then
+      resolved_target="$(CDPATH= cd -- "$target_directory" && pwd -P)/$(basename -- "$target")"
+    else
+      resolved_target=""
+    fi
+    case "$resolved_target" in
+      "$DOTFILES_ROOT/config/bin/"*) ;;
+      *) return 0 ;;
+    esac
+
+    local old_ifs="$IFS"
+    IFS=:
+    for path_entry in $PATH; do
+      [[ -n "$path_entry" ]] || path_entry=.
+      [[ "$path_entry/$command_name" -ef "$command_path" ]] && continue
+      if [[ -x "$path_entry/$command_name" && ! -d "$path_entry/$command_name" ]]; then
+        IFS="$old_ifs"
+        return 0
+      fi
+    done
+    IFS="$old_ifs"
+    return 1
+  fi
+  return 0
+}
+
 ensure_package() {
   local label="$1" command_name="$2" macos_package="$3" omarchy_package="$4"
   local package helper
-  if command -v "$command_name" >/dev/null 2>&1; then
+  if package_command_available "$command_name"; then
     report_add unchanged "$label"
     return 0
   fi

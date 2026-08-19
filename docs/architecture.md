@@ -102,6 +102,13 @@ installer and reconciles it when needed; it never assumes a processor prefix.
 The portable shell layer activates mise for both Zsh and Bash when available;
 this is local shell initialization only and performs no installation or update.
 
+The managed `~/.local/bin/gh` shim is deliberately a real executable rather than
+an interactive-shell alias, so agent TUIs and scripts resolve it too. It removes
+its own directory from `PATH` before delegating to `op plugin run -- gh`, which
+prevents recursion and limits the GitHub token to the real `gh` process. Package
+reconciliation ignores this managed shim when checking whether the underlying
+GitHub CLI is installed.
+
 The macOS-only Tokyo Night layer uses the same ownership split. Complete
 declarative files (Starship, eza's theme, the K9s skin, and Xcode/Codex/Claude
 themes) are managed symlinks.

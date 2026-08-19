@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# A shell alias is invisible to subprocesses such as Claude Code. This real
+# executable keeps 1Password provisioning scoped to gh while remaining visible
+# to every process that inherits the user's PATH.
+shim_directory="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
+filtered_path=""
+old_ifs="$IFS"
+IFS=:
+for path_entry in $PATH; do
+  [[ -n "$path_entry" ]] || path_entry=.
+  canonical_entry=""
+  if [[ -d "$path_entry" ]]; then
+    canonical_entry="$(CDPATH= cd -- "$path_entry" && pwd -P)"
+  fi
+  [[ "$canonical_entry" == "$shim_directory" ]] && continue
+  if [[ -n "$filtered_path" ]]; then
+    filtered_path="$filtered_path:$path_entry"
+  else
+    filtered_path="$path_entry"
+  fi
+done
+IFS="$old_ifs"
+unset old_ifs path_entry canonical_entry shim_directory
+
+export PATH="$filtered_path"
+unset filtered_path
+
+real_gh="$(type -P gh 2>/dev/null || true)"
+op_cli="$(type -P op 2>/dev/null || true)"
+if [[ -z "$real_gh" ]]; then
+  echo "GitHub CLI is not installed outside the dotfiles shim; run ./setup" >&2
+  exit 127
+fi
+if [[ -z "$op_cli" ]]; then
+  echo "1Password CLI is unavailable; run ./setup" >&2
+  exit 127
+fi
+
+# Use the command name expected by the official 1Password GitHub shell plugin.
+# PATH no longer contains this shim, so the nested lookup cannot recurse.
+exec "$op_cli" plugin run -- gh "$@"

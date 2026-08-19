@@ -25,5 +25,5 @@ onepassword_manual_guidance() {
       report_manual "In 1Password Settings > Security enable system authentication, then in Developer enable CLI integration; a PolKit agent must be running"
       ;;
   esac
+  report_manual "Run 'op plugin init gh' once and choose a global GitHub credential; the managed gh shim replaces the shell alias"
 }
-
