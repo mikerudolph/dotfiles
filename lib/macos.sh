@@ -210,7 +210,7 @@ ensure_xcode_developer_directory() {
   fi
 
   if ! "$expected/usr/bin/xcodebuild" -checkFirstLaunchStatus >/dev/null 2>&1; then
-    report_manual "Open Xcode, accept its license, and complete first-launch component installation"
+    report_manual "Run bin/onboard to review and complete Xcode first-launch component installation"
   fi
 }
 

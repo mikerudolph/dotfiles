@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+DOTFILES_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)"
+export DOTFILES_ROOT
+source "$DOTFILES_ROOT/lib/paths.sh"
+source "$DOTFILES_ROOT/lib/platform.sh"
+source "$DOTFILES_ROOT/lib/onepassword.sh"
+
+dry_run=0
+while (( $# > 0 )); do
+  case "$1" in
+    --dry-run) dry_run=1 ;;
+    -h|--help)
+      echo "Usage: bin/onboard [--dry-run]"
+      echo
+      echo "Inspect interactive first-run tasks on both supported platforms."
+      echo "On macOS, a confirmed non-dry run can complete Xcode first-launch setup."
+      exit 0
+      ;;
+    *) echo "Unknown option: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+dotfiles_paths_init
+platform_detect || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+platform_validate_supported || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+
+onboard_status() {
+  printf '  %-28s %s\n' "$1" "$2"
+}
+
+confirm() {
+  local prompt="$1" answer
+  [[ -t 0 ]] || return 1
+  printf '%s [y/N] ' "$prompt"
+  IFS= read -r answer
+  case "$answer" in
+    y|Y|yes|YES|Yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+onboard_xcode() {
+  local developer_dir="${DOTFILES_TEST_XCODE_DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
+  local xcodebuild="${DOTFILES_TEST_XCODEBUILD:-$developer_dir/usr/bin/xcodebuild}"
+
+  echo "macOS developer setup"
+  if [[ ! -x "$xcodebuild" ]]; then
+    onboard_status "Xcode first launch" "waiting for Xcode installation"
+    echo "  Install Xcode through apply/App Store, then rerun bin/onboard."
+    return 0
+  fi
+
+  if "$xcodebuild" -checkFirstLaunchStatus >/dev/null 2>&1; then
+    onboard_status "Xcode first launch" "complete"
+    return 0
+  fi
+
+  onboard_status "Xcode first launch" "pending"
+  if [[ "$dry_run" == "1" ]]; then
+    echo "  Would run Apple's xcodebuild -runFirstLaunch with administrator approval."
+    return 0
+  fi
+
+  if ! confirm "Install Xcode's required components and accept its license now?"; then
+    echo "  Skipped. Rerun bin/onboard when ready."
+    return 0
+  fi
+
+  sudo "$xcodebuild" -runFirstLaunch
+  if "$xcodebuild" -checkFirstLaunchStatus >/dev/null 2>&1; then
+    onboard_status "Xcode first launch" "complete"
+  else
+    echo "Xcode still reports incomplete first-launch setup." >&2
+    return 1
+  fi
+}
+
+printf 'Dotfiles onboarding\n  Repository: %s\n  Platform:   %s\n\n' \
+  "$DOTFILES_ROOT" "$(platform_label)"
+
+echo "Foundation"
+if onepassword_desktop_present; then
+  onboard_status "1Password desktop" "detected"
+else
+  onboard_status "1Password desktop" "missing (manual prerequisite)"
+fi
+if command -v op >/dev/null 2>&1; then
+  onboard_status "1Password CLI" "available"
+else
+  onboard_status "1Password CLI" "missing (run setup/apply)"
+fi
+if git config --global --get user.signingKey >/dev/null 2>&1; then
+  onboard_status "Git signing key" "configured"
+else
+  onboard_status "Git signing key" "not configured"
+fi
+echo
+
+case "${OS:-}:${FLAVOR:-}" in
+  macos:)
+    onboard_xcode
+    echo
+    echo "Manual approvals still required"
+    echo "  Enable 1Password CLI integration in 1Password Settings > Developer."
+    echo "  Complete application sign-ins and macOS privacy/security prompts as needed."
+    ;;
+  linux:omarchy)
+    echo "Omarchy services"
+    if command -v tailscale >/dev/null 2>&1; then
+      onboard_status "Tailscale command" "available"
+    else
+      onboard_status "Tailscale command" "missing (run setup/apply)"
+    fi
+    if command -v dropbox >/dev/null 2>&1; then
+      onboard_status "Dropbox command" "available"
+    else
+      onboard_status "Dropbox command" "missing (run setup/apply)"
+    fi
+    echo
+    echo "Manual approvals still required"
+    echo "  Enable system authentication and CLI integration in 1Password."
+    echo "  Authenticate Tailscale and Dropbox after their packages are present."
+    ;;
+esac
+
+if [[ "$dry_run" == "1" ]]; then
+  echo
+  echo "No changes made."
+fi

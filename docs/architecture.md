@@ -17,6 +17,10 @@ manual 1Password Desktop install + sign-in
                     ↓
               desired state or
           explicit unresolved conflicts
+                    ↓
+                 onboard
+       detect interactive account/security work
+       run only explicitly confirmed actions
 ```
 
 On an existing machine, `git pull --ff-only` (or `bin/update`) leads directly to
@@ -55,6 +59,7 @@ changes only the action sink; it does not call a parallel planner.
 | Managed source block | unique begin/end markers for that block | add only the bounded block; malformed markers conflict |
 | Git composition | exact shared `include.path` entry | add only the include; invalid/non-regular config conflicts |
 | Directory | real directory already exists | non-directory conflicts |
+| Generated completion cache | marker inside the dotfiles-specific cache | conflict, untouched |
 | macOS preference | typed current value from user or current-host defaults | change only that key |
 | macOS workspace shortcut | exact symbolic-hotkey entry ID | replace only Desktop shortcut IDs 118–126 |
 | macOS keyboard mapping | Caps Lock HID usage entry in `UserKeyMapping` | merge that entry; preserve every other mapping |
@@ -110,8 +115,8 @@ reconciliation ignores this managed shim when checking whether the underlying
 GitHub CLI is installed.
 
 The macOS-only Tokyo Night layer uses the same ownership split. Complete
-declarative files (Starship, eza's theme, the K9s skin, and Xcode/Codex/Claude
-themes) are managed symlinks.
+declarative files (Starship, eza's theme, the K9s skin, mactop and Glow themes,
+and Xcode/Codex/Claude themes) are managed symlinks.
 fzf, bat, and K9s select a theme through environment variables loaded only by
 the macOS Zsh integration. Lazygit's theme is the final entry in its supported
 comma-separated config list, preserving an explicit or default machine-local
@@ -125,8 +130,17 @@ machine-local.
 macOS system requirements use narrowly scoped reconcilers: `mas get` for
 Xcode, `xcode-select --install` for a missing developer toolchain,
 `xcode-select --switch` for a present full Xcode, and `softwareupdate
---install-rosetta` only on Apple silicon. Authentication and license/first-launch
-steps remain explicit manual actions.
+--install-rosetta` only on Apple silicon. Authentication remains manual.
+`bin/onboard` detects pending Xcode first-launch work in dry-run mode and runs
+`xcodebuild -runFirstLaunch` only after explicit confirmation; this keeps
+privileged, interactive work out of ordinary reconciliation.
+
+Static macOS Zsh completions are disposable generated state under
+`${XDG_CACHE_HOME:-~/.cache}/dotfiles`. Apply invokes each installed tool's
+completion generator, preserves Zsh's leading `#compdef`, and adds an ownership
+marker before atomically replacing only a previously generated file. An
+unmarked existing file is a conflict. Shell startup merely prepends the cache to
+`fpath` and uses Zsh's state-backed `compinit` dump; it performs no generation.
 
 ## Exit behavior
 

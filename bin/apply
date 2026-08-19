@@ -11,6 +11,7 @@ source "$DOTFILES_ROOT/lib/platform.sh"
 source "$DOTFILES_ROOT/lib/logging.sh"
 source "$DOTFILES_ROOT/lib/files.sh"
 source "$DOTFILES_ROOT/lib/packages.sh"
+source "$DOTFILES_ROOT/lib/completions.sh"
 source "$DOTFILES_ROOT/lib/mise.sh"
 source "$DOTFILES_ROOT/lib/macos.sh"
 source "$DOTFILES_ROOT/lib/macos-defaults.sh"
@@ -68,6 +69,10 @@ declare_managed_file() {
 
 declare_mise_tool() {
   ensure_mise_tool "$@" || true
+}
+
+declare_static_completion() {
+  ensure_static_zsh_completion "$@" || true
 }
 
 declare_macos_app() {

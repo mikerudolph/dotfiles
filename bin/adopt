@@ -24,6 +24,8 @@ if [[ -z "$target" || "$target" == "--help" || "$target" == "-h" ]]; then
     echo "  starship"
     echo "  eza-theme"
     echo "  k9s-theme"
+    echo "  mactop-theme"
+    echo "  glow-theme"
     echo "  alacritty"
     echo "  raycast-term"
     echo "  raycast-web"

@@ -29,8 +29,12 @@ fi
 
 bootstrap_package_backend "$dry_run"
 if [[ "$dry_run" == "1" ]]; then
-  exec "$DOTFILES_ROOT/bin/apply" --dry-run
+  apply_status=0
+  "$DOTFILES_ROOT/bin/apply" --dry-run || apply_status=$?
+  echo
+  "$DOTFILES_ROOT/bin/onboard" --dry-run
+  exit "$apply_status"
 else
-  exec "$DOTFILES_ROOT/bin/apply"
+  "$DOTFILES_ROOT/bin/apply"
+  exec "$DOTFILES_ROOT/bin/onboard"
 fi
-

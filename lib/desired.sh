@@ -33,7 +33,17 @@ desired_packages() {
 desired_directories() {
   if [[ "${OS:-}" == "macos" ]]; then
     declare_directory "$DOTFILES_XDG_STATE_HOME/zsh"
+    declare_directory "$DOTFILES_CACHE_HOME/completions/zsh"
   fi
+}
+
+desired_static_completions() {
+  [[ "${OS:-}" == "macos" ]] || return 0
+  declare_static_completion "Codex CLI" codex codex completion zsh
+  declare_static_completion "GitHub CLI" gh gh completion -s zsh
+  declare_static_completion "kubectl" kubectl kubectl completion zsh
+  declare_static_completion "mise" mise mise completion zsh
+  declare_static_completion "1Password CLI" op op completion zsh
 }
 
 desired_mise_tools() {
@@ -93,6 +103,19 @@ desired_managed_files() {
       "$DOTFILES_ROOT/themes/tokyonight/k9s.yaml" \
       "$k9s_data_home/k9s/skins/tokyonight.yaml" \
       "K9s Tokyo Night skin"
+
+    local mactop_theme_destination="$HOME/.mactop/theme.json"
+    case "${XDG_CONFIG_HOME:-}" in
+      /*) mactop_theme_destination="$XDG_CONFIG_HOME/mactop/theme.json" ;;
+    esac
+    declare_managed_file "mactop-theme" \
+      "$DOTFILES_ROOT/themes/tokyonight/mactop.json" \
+      "$mactop_theme_destination" \
+      "mactop Tokyo Night theme"
+    declare_managed_file "glow-theme" \
+      "$DOTFILES_ROOT/themes/tokyonight/glow.json" \
+      "$DOTFILES_CONFIG_HOME/glow/tokyonight.json" \
+      "Glow Tokyo Night stylesheet"
 
     declare_managed_file "alacritty" \
       "$DOTFILES_ROOT/config/alacritty/alacritty.toml" \
@@ -245,6 +268,7 @@ reconcile_desired_state() {
   desired_packages
   desired_directories
   desired_managed_files
+  desired_static_completions
   desired_mise_tools
   desired_git_includes
   desired_git_signing_guidance

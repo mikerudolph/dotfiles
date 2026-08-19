@@ -11,6 +11,9 @@ The Alacritty, eza, fzf, and lazygit values are adapted from
 `cdc07ac78467a233fd62c493de29a17e0cf2b2b6` (Apache-2.0). The K9s adapter is
 adapted to the Night palette from
 [`axkirillov/k9s-tokyonight`](https://github.com/axkirillov/k9s-tokyonight).
+The Glow stylesheet is the upstream Glamour Tokyo Night style from
+[`charmbracelet/glamour`](https://github.com/charmbracelet/glamour) at commit
+`d0a719943b7b399fc17f0a98454c7b70443ce29b` (MIT; see `LICENSE.glamour`).
 Neovim consumes the upstream plugin directly.
 
 Adapters are intentionally independent files because each tool has a different
@@ -31,13 +34,16 @@ a tool mixes theme and machine-local configuration.
   merge list, preserving a local config when present.
 - K9s: dedicated skin selected through `K9S_SKIN`, leaving the main K9s config
   and per-context configuration local.
+- mactop: dedicated `theme.json` covering every documented component color.
+- Glow: dedicated Glamour JSON selected by absolute `GLOW_STYLE` and
+  `GLAMOUR_STYLE` paths; the latter also gives GitHub CLI the same Markdown
+  palette.
 - Xcode: standalone managed `.xccolortheme`, selected through Xcode's bounded
   `XCFontAndColorCurrentTheme` preference.
 - Codex CLI: standalone managed `.tmTheme` in `$CODEX_HOME/themes`. Selection
   remains a one-time `/theme` action so the mixed `config.toml` stays local.
 - Claude Code: standalone managed JSON theme in `~/.claude/themes`. Selection
   remains a one-time `/theme` action so the mixed `settings.json` stays local.
-Glow and lazydocker inherit the terminal palette where they use ANSI colors,
-but this repository does not own their entire configuration just to force a
-theme. Raycast retains its application-managed appearance because custom
-themes require Raycast Pro.
+Lazydocker inherits the terminal palette rather than giving dotfiles ownership
+of its mixed application configuration. Raycast retains its application-managed
+appearance because custom themes require Raycast Pro.

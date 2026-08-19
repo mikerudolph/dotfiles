@@ -13,8 +13,9 @@ this repository and run:
 ```
 
 `setup` detects the platform, establishes the native package backend when
-needed, verifies that the 1Password desktop app is present, and delegates to
-`bin/apply`. On macOS it prefers a managed Workbrew wrapper when present, then an
+needed, verifies that the 1Password desktop app is present, delegates desired
+state to `bin/apply`, and finishes with the guided `bin/onboard` checks. On macOS
+it prefers a managed Workbrew wrapper when present, then an
 existing Homebrew, and bootstraps Homebrew only when neither exists. It never
 bypasses Workbrew by calling the underlying vanilla Homebrew directly. On
 Omarchy, native packages go through `omarchy-pkg-add`.
@@ -37,11 +38,12 @@ Existing application bundles, installed casks, or CLI commands satisfy the
 declarations, so apply does not replace a direct/self-updating installation just
 to change its provenance.
 
-Before changing anything, inspect the plan and the machine:
+Before changing anything, inspect the plan, onboarding checks, and the machine:
 
 ```sh
 ./bin/doctor
 ./bin/apply --dry-run
+./bin/onboard --dry-run
 ```
 
 For an already-managed machine:
@@ -58,7 +60,7 @@ then invokes `apply`. Shell startup never performs these operations.
 
 On macOS, Tokyo Night **Night** is the selected color scheme. Managed adapters
 cover the desktop wallpaper, Xcode, Codex CLI, Claude Code, Alacritty,
-Neovim/LazyVim, Starship, eza, fzf, lazygit, and K9s; bat uses
+Neovim/LazyVim, Starship, eza, fzf, lazygit, K9s, mactop, and Glow; bat uses
 its ANSI theme so syntax colors follow the active terminal palette without a
 generated theme cache. Lazygit's theme is appended to its supported multi-file
 configuration list, while K9s uses a dedicated skin, so neither integration
@@ -143,8 +145,10 @@ Xcode is declared by its Mac App Store ID and obtained through `mas get` when th
 signed-in App Store session permits it. Apply requests Apple's Command Line Tools
 installer when no developer directory exists, selects a present full Xcode as the
 active developer directory, and installs Rosetta only on Apple silicon. App Store
-authentication, Apple license acceptance, and Xcode's first-launch components are
-reported as manual actions when required.
+authentication remains manual. When Xcode's license or required components are
+pending, `bin/onboard` shows the exact action and, after explicit confirmation,
+runs Apple's `xcodebuild -runFirstLaunch` with administrator approval. Normal
+`apply` remains non-interactive and only points to onboarding.
 
 ## macOS defaults
 
@@ -243,9 +247,13 @@ semantics, while non-path arguments are resolved through zoxide. Zsh gets
 case-insensitive eager completion, typed-prefix history arrows, shared
 deduplicated history under `${XDG_STATE_HOME:-~/.local/state}/zsh`, extended
 globbing, automatic directory changes, symlink traversal, interactive comments,
-and no terminal bell. It preserves the user's current ZLE keymap instead of
-forcing Emacs bindings. Omarchy Bash gets equivalent Readline completion/history
-navigation behavior and prompt-display cleanup before Starship renders.
+and no terminal bell. On macOS, apply generates static Zsh completions for Codex,
+GitHub CLI, kubectl, mise, and 1Password CLI below the dotfiles cache. Startup
+only adds that directory to `fpath` and initializes `compinit`; it never executes
+those tools to generate code. It preserves the user's current ZLE keymap instead
+of forcing Emacs bindings. Omarchy Bash gets equivalent Readline
+completion/history navigation behavior and prompt-display cleanup before
+Starship renders.
 
 ## Neovim
 
@@ -271,6 +279,7 @@ bin/apply              canonical reconciler and dry-run
 bin/update             conservative checkout update + apply
 bin/doctor             read-only diagnostics
 bin/adopt              inspection-only ownership transition scaffold
+bin/onboard            guided, explicitly confirmed first-run actions
 lib/                   paths, platform, actions, files, packages, state
 config/                fully managed or included application configuration
 shell/                 cheap shared and shell-specific startup fragments

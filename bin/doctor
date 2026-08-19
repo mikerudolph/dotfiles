@@ -9,6 +9,7 @@ source "$DOTFILES_ROOT/lib/platform.sh"
 source "$DOTFILES_ROOT/lib/logging.sh"
 source "$DOTFILES_ROOT/lib/files.sh"
 source "$DOTFILES_ROOT/lib/packages.sh"
+source "$DOTFILES_ROOT/lib/completions.sh"
 source "$DOTFILES_ROOT/lib/mise.sh"
 source "$DOTFILES_ROOT/lib/macos.sh"
 source "$DOTFILES_ROOT/lib/macos-defaults.sh"
@@ -104,6 +105,7 @@ if [[ "$platform_ok" == "yes" ]]; then
   declare_package() { ensure_package "$@" || true; }
   declare_directory() { ensure_directory "$@" || true; }
   declare_mise_tool() { ensure_mise_tool "$@" || true; }
+  declare_static_completion() { ensure_static_zsh_completion "$@" || true; }
   declare_macos_app() { ensure_macos_app_store_app "$@" || true; }
   declare_macos_cask() { ensure_macos_cask "$@" || true; }
   declare_direct_macos_app() { ensure_direct_macos_app "$@" || true; }

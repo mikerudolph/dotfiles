@@ -5,6 +5,8 @@ export STARSHIP_CONFIG="$_dotfiles_config_home/starship.toml"
 export EZA_CONFIG_DIR="$_dotfiles_config_home/eza"
 export BAT_THEME="ansi"
 export K9S_SKIN="tokyonight"
+export GLOW_STYLE="$_dotfiles_config_home/glow/tokyonight.json"
+export GLAMOUR_STYLE="$GLOW_STYLE"
 
 _dotfiles_lazygit_theme="$DOTFILES_ROOT/themes/tokyonight/lazygit.yml"
 if [[ ",${LG_CONFIG_FILE:-}," != *",$_dotfiles_lazygit_theme,"* ]]; then
