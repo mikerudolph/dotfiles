@@ -18,6 +18,21 @@ if [[ -z "$target" || "$target" == "--help" || "$target" == "-h" ]]; then
   echo
   echo "Available configurations:"
   echo "  mise"
+  echo "  nvim"
+  if [[ "${OS:-}" == "macos" ]]; then
+    echo "  starship"
+    echo "  eza-theme"
+    echo "  k9s-theme"
+    echo "  alacritty"
+    echo "  raycast-term"
+    echo "  raycast-web"
+    echo "  hushlogin"
+    echo "  xcode-theme"
+    echo "  codex-theme"
+    echo "  claude-theme"
+    echo "  capslock-helper"
+    echo "  capslock-agent"
+  fi
   echo
   echo "This first version only inspects ownership; it never changes files."
   [[ -n "$target" ]] && exit 0 || exit 2
@@ -48,4 +63,3 @@ if [[ "$found" == "0" ]]; then
   echo "Unknown adopt target: $target" >&2
   exit 2
 fi
-

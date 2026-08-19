@@ -88,18 +88,19 @@ ensure_symlink() {
 }
 
 managed_block_text() {
-  local block_id="$1" content="$2"
-  printf '# >>> dotfiles:%s >>>\n%s\n# <<< dotfiles:%s <<<\n' "$block_id" "$content" "$block_id"
+  local block_id="$1" content="$2" comment_prefix="${3:-#}"
+  printf '%s >>> dotfiles:%s >>>\n%s\n%s <<< dotfiles:%s <<<\n' \
+    "$comment_prefix" "$block_id" "$content" "$comment_prefix" "$block_id"
 }
 
 ensure_source_block() {
-  local destination="$1" block_id="$2" content="$3" label="${4:-}" pretty
+  local destination="$1" block_id="$2" content="$3" label="${4:-}" comment_prefix="${5:-#}" pretty
   local start end start_count end_count expected current temp mode
   pretty="$(dotfiles_pretty_path "$destination")"
   [[ -n "$label" ]] || label="$pretty"
-  start="# >>> dotfiles:$block_id >>>"
-  end="# <<< dotfiles:$block_id <<<"
-  expected="$(managed_block_text "$block_id" "$content")"
+  start="$comment_prefix >>> dotfiles:$block_id >>>"
+  end="$comment_prefix <<< dotfiles:$block_id <<<"
+  expected="$(managed_block_text "$block_id" "$content" "$comment_prefix")"
 
   if [[ -L "$destination" || ( -e "$destination" && ! -f "$destination" ) ]]; then
     report_conflict "$pretty is not a regular machine-local file; refusing to add a managed block"
@@ -107,8 +108,8 @@ ensure_source_block() {
   fi
 
   if [[ -f "$destination" ]]; then
-    start_count="$(grep -Fxc "$start" "$destination" 2>/dev/null || true)"
-    end_count="$(grep -Fxc "$end" "$destination" 2>/dev/null || true)"
+    start_count="$(grep -Fxc -- "$start" "$destination" 2>/dev/null || true)"
+    end_count="$(grep -Fxc -- "$end" "$destination" 2>/dev/null || true)"
     if [[ "$start_count" != "$end_count" || "$start_count" -gt 1 ]]; then
       report_conflict "$pretty has malformed dotfiles block markers for $block_id"
       return 1
@@ -201,4 +202,3 @@ ensure_git_include() {
     report_add changed "added shared include to $pretty"
   fi
 }
-

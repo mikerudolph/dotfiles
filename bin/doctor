@@ -102,6 +102,7 @@ echo
 
 if [[ "$platform_ok" == "yes" ]]; then
   declare_package() { ensure_package "$@" || true; }
+  declare_directory() { ensure_directory "$@" || true; }
   declare_mise_tool() { ensure_mise_tool "$@" || true; }
   declare_macos_app() { ensure_macos_app_store_app "$@" || true; }
   declare_macos_cask() { ensure_macos_cask "$@" || true; }
@@ -111,16 +112,19 @@ if [[ "$platform_ok" == "yes" ]]; then
   declare_macos_symbolic_hotkey() { ensure_macos_symbolic_hotkey "$@" || true; }
   declare_macos_workspace_count() { check_macos_workspace_count "$@" || true; }
   declare_macos_dark_mode() { ensure_macos_dark_mode "$@" || true; }
+  declare_macos_wallpaper() { ensure_macos_wallpaper "$@" || true; }
   declare_macos_visible_directory() { ensure_macos_visible_directory "$@" || true; }
+  declare_macos_capslock_control() { ensure_macos_capslock_control || true; }
   declare_command_line_tools() { ensure_command_line_tools || true; }
   declare_xcode_developer_directory() { ensure_xcode_developer_directory || true; }
   declare_rosetta() { ensure_rosetta || true; }
   declare_managed_file() { local name="$1"; shift; ensure_symlink "$@" || true; }
   declare_git_include() { ensure_git_include "$@" || true; }
   declare_shell_block() { ensure_source_block "$@" || true; }
+  declare_config_block() { ensure_source_block "$@" || true; }
   reconcile_desired_state
   report_section "Pending installs" ${REPORT_INSTALL[@]+"${REPORT_INSTALL[@]}"}
-  report_section "Pending file changes" ${REPORT_LINK[@]+"${REPORT_LINK[@]}"} ${REPORT_CONFIGURE[@]+"${REPORT_CONFIGURE[@]}"}
+  report_section "Pending file changes" ${REPORT_DIRECTORY[@]+"${REPORT_DIRECTORY[@]}"} ${REPORT_LINK[@]+"${REPORT_LINK[@]}"} ${REPORT_CONFIGURE[@]+"${REPORT_CONFIGURE[@]}"}
   report_section "Conflicts" ${REPORT_CONFLICT[@]+"${REPORT_CONFLICT[@]}"}
   report_section "Manual checks" ${REPORT_MANUAL[@]+"${REPORT_MANUAL[@]}"}
 fi

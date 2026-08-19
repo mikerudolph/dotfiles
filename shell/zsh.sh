@@ -1,7 +1,6 @@
 [[ -r "$DOTFILES_ROOT/shell/common.sh" ]] && . "$DOTFILES_ROOT/shell/common.sh"
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate zsh)"
-fi
+[[ -r "$DOTFILES_ROOT/shell/macos-theme.sh" ]] && . "$DOTFILES_ROOT/shell/macos-theme.sh"
+[[ -r "$DOTFILES_ROOT/shell/zsh-options.zsh" ]] && . "$DOTFILES_ROOT/shell/zsh-options.zsh"
 
 if [[ -n "${DOTFILES_BREW_PREFIX:-}" && -r "$DOTFILES_BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
   . "$DOTFILES_BREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"

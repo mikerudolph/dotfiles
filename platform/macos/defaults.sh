@@ -33,6 +33,18 @@ desired_macos_workspace_shortcuts() {
 
 desired_macos_defaults() {
   declare_macos_dark_mode "Dark appearance" true
+  declare_macos_default \
+    "Use the blue macOS accent color" \
+    NSGlobalDomain AppleAccentColor int 4
+  declare_macos_default \
+    "Use Tokyo Night blue for selected text" \
+    NSGlobalDomain AppleHighlightColor string "0.478431 0.635294 0.968627 Blue"
+  declare_macos_default \
+    "Select the Tokyo Night Xcode color theme" \
+    com.apple.dt.Xcode XCFontAndColorCurrentTheme string "Tokyo Night.xccolortheme"
+  declare_macos_wallpaper \
+    "Tokyo Night desktop wallpaper" \
+    "$DOTFILES_ROOT/themes/tokyonight/assets/wallpaper-macos.jpg"
 
   if (( $(macos_major_version) >= 26 )); then
     declare_macos_default \

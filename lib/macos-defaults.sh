@@ -181,6 +181,40 @@ ensure_macos_dark_mode() {
   fi
 }
 
+ensure_macos_wallpaper() {
+  local label="$1" source="$2" script current
+  [[ "${OS:-}" == "macos" ]] || return 0
+  script="$DOTFILES_ROOT/platform/macos/wallpaper.applescript"
+
+  if [[ ! -f "$source" ]]; then
+    report_conflict "$label source is missing: $source"
+    return 1
+  fi
+  if [[ ! -f "$script" ]]; then
+    report_conflict "$label helper is missing: $script"
+    return 1
+  fi
+
+  current="$(osascript "$script" check "$source" 2>/dev/null || true)"
+  if [[ "$current" == "true" ]]; then
+    report_add unchanged "$label"
+    return 0
+  fi
+
+  if [[ "${DOTFILES_DRY_RUN:-0}" == "1" ]]; then
+    report_add configure "$label ($source on every Desktop Space)"
+    return 0
+  fi
+
+  if [[ "$(osascript "$script" set "$source" 2>/dev/null || true)" == "true" ]]; then
+    report_add changed "configured $label"
+  else
+    report_conflict "Failed to configure $label"
+    report_manual "Set $source as the wallpaper on all Spaces in System Settings"
+    return 1
+  fi
+}
+
 macos_path_flags() {
   if [[ -n "${DOTFILES_TEST_PATH_FLAGS+x}" ]]; then
     printf '%s\n' "$DOTFILES_TEST_PATH_FLAGS"
@@ -211,6 +245,31 @@ ensure_macos_visible_directory() {
     report_add changed "configured $label"
     MACOS_DEFAULTS_DIRTY=1
     queue_macos_default_restart Finder
+  else
+    report_conflict "Failed to configure $label"
+    return 1
+  fi
+}
+
+ensure_macos_capslock_control() {
+  local label="Caps Lock as Control" helper
+  [[ "${OS:-}" == "macos" ]] || return 0
+  helper="$DOTFILES_ROOT/platform/macos/capslock-control.sh"
+
+  if [[ ! -x "$helper" ]]; then
+    report_conflict "$label helper is missing or not executable: $helper"
+    return 1
+  fi
+  if "$helper" check >/dev/null 2>&1; then
+    report_add unchanged "$label"
+    return 0
+  fi
+  if [[ "${DOTFILES_DRY_RUN:-0}" == "1" ]]; then
+    report_add configure "$label for all keyboards"
+    return 0
+  fi
+  if "$helper" apply; then
+    report_add changed "configured $label"
   else
     report_conflict "Failed to configure $label"
     return 1

@@ -1,0 +1,37 @@
+# A compact macOS prompt using the Tokyo Night Night palette.
+palette = "tokyo_night"
+command_timeout = 200
+add_newline = false
+format = "$directory$git_branch$git_status$line_break$character"
+
+[directory]
+style = "bold blue"
+truncation_length = 2
+truncate_to_repo = false
+read_only = " 󰌾"
+
+[git_branch]
+format = " on [$symbol$branch]($style)"
+symbol = " "
+style = "magenta"
+
+[git_status]
+format = "[$all_status$ahead_behind]($style)"
+style = "yellow"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold cyan)"
+
+[palettes.tokyo_night]
+background = "#1a1b26"
+foreground = "#c0caf5"
+comment = "#565f89"
+red = "#f7768e"
+orange = "#ff9e64"
+yellow = "#e0af68"
+green = "#9ece6a"
+cyan = "#7dcfff"
+blue = "#7aa2f7"
+magenta = "#bb9af7"

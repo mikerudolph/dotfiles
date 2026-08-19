@@ -17,6 +17,10 @@ ensure_macos_cask() {
     report_add unchanged "$label"
     return 0
   fi
+  if brew_path="$(find_brew 2>/dev/null)" && "$brew_path" list --cask "$cask" >/dev/null 2>&1; then
+    report_add unchanged "$label"
+    return 0
+  fi
   if [[ "${DOTFILES_DRY_RUN:-0}" == "1" ]]; then
     report_add install "$label ($cask cask via $(package_backend_name))"
     return 0

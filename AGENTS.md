@@ -19,7 +19,7 @@ Omarchy. Preserve these invariants in every change:
   macOS and Arch/Omarchy automatically; unsupported systems fail clearly.
 - `/usr/share/omarchy` is upstream-owned and read-only to this repository. Use
   Omarchy's supported user configuration, hook, and package layers.
-- Secrets never enter tracked files, logs, tests, fixtures, or command output.
+- Secrets never enter tracked files, logs, fixtures, or command output.
   Machine-local overrides and credentials remain local and untracked.
 - Shell startup performs no network, Git, package installation, update, or other
   reconciliation work. Keep it cheap.
@@ -33,5 +33,5 @@ Omarchy. Preserve these invariants in every change:
 - Preserve local Git credential helpers and settings by composing configuration
   with an include rather than replacing the machine-local file.
 
-Before finishing a change, syntax-check shell scripts and run `./test/run`.
-
+Before finishing a change, syntax-check every changed shell script. For changes
+to reconciliation behavior, also run the relevant command in dry-run mode.

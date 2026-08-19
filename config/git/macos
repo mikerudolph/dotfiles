@@ -1,0 +1,3 @@
+# The 1Password signing helper is inside the macOS desktop application bundle.
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign

@@ -57,6 +57,8 @@ changes only the action sink; it does not call a parallel planner.
 | Directory | real directory already exists | non-directory conflicts |
 | macOS preference | typed current value from user or current-host defaults | change only that key |
 | macOS workspace shortcut | exact symbolic-hotkey entry ID | replace only Desktop shortcut IDs 118–126 |
+| macOS keyboard mapping | Caps Lock HID usage entry in `UserKeyMapping` | merge that entry; preserve every other mapping |
+| Omarchy keyboard option | bounded Lua block in the user input module | preserve content outside the block and unrelated XKB options |
 
 Filesystem truth is authoritative. There is no configuration or package database.
 macOS preferences similarly use `defaults read` as their current-state source;
@@ -64,11 +66,24 @@ typed declarations in `platform/macos/defaults.sh` write only differing values.
 They run through the canonical reconciler, so `setup` does not have a separate or
 one-time preferences path.
 
+Git composition is ordered common → platform → machine-local. Common behavior
+and aliases live in the repository; macOS supplies the 1Password application
+signer path; and the optional `~/.gitconfig.local` include has final precedence.
+The signing public key is never inferred from 1Password or inventory data and
+must be selected locally before signed commits can succeed.
+
 Control Center settings that macOS stores per host use the same typed primitive
 with `defaults -currentHost`. Workspace shortcuts are merged one dictionary entry
 at a time rather than replacing `AppleSymbolicHotKeys`. Creating or removing
 Spaces remains manual because the available automation relies on private APIs and
 Accessibility-driven Mission Control interaction.
+
+Keyboard remapping is also platform-native and composable. On macOS, a managed
+helper merges Caps Lock → left Control into `hidutil`'s global mapping array and a
+user LaunchAgent reapplies it at login. On Omarchy, a `--`-delimited block is
+added to `~/.config/hypr/input.lua`, after upstream defaults have loaded. It reads
+the active `kb_options`, removes only options that consume the physical Caps Lock
+key, and appends `ctrl:nocaps`; it never edits `/usr/share/omarchy`.
 
 Dock application removal is intentionally different: clearing pinned apps is a
 destructive ownership transition, so it lives in migration `0001`, executes once
@@ -84,7 +99,21 @@ only and performs no upgrade, removal, or cleanup operation. Runtime declaration
 live in the managed mise config and are installed idempotently with mise. The macOS
 login block records the Homebrew executable discovered by `command -v` or the
 installer and reconciles it when needed; it never assumes a processor prefix.
-Zsh activates mise locally, while Omarchy retains its upstream mise activation.
+The portable shell layer activates mise for both Zsh and Bash when available;
+this is local shell initialization only and performs no installation or update.
+
+The macOS-only Tokyo Night layer uses the same ownership split. Complete
+declarative files (Starship, eza's theme, the K9s skin, and Xcode/Codex/Claude
+themes) are managed symlinks.
+fzf, bat, and K9s select a theme through environment variables loaded only by
+the macOS Zsh integration. Lazygit's theme is the final entry in its supported
+comma-separated config list, preserving an explicit or default machine-local
+config. On Omarchy, dotfiles neither invokes the theme selector nor installs
+these adapters; Omarchy exclusively owns its active theme and generated state.
+The macOS wallpaper and native accent/highlight are bounded preferences rather
+than managed files. Codex and Claude theme selection remains interactive so
+their mixed settings, authentication, plugin, and trusted-project state stays
+machine-local.
 
 macOS system requirements use narrowly scoped reconcilers: `mas get` for
 Xcode, `xcode-select --install` for a missing developer toolchain,
@@ -104,12 +133,11 @@ dotfiles to inspect vaults or bypass desktop security controls.
 
 ## Deliberately deferred
 
-- GUI application, font, alias, and tool selections not yet approved from the
-  inventory.
-- Starship appearance, terminal, Neovim/LazyVim, agent, SSH, and service
-  configuration. Their selected binaries may already be declared.
+- Remaining GUI application, font, alias, and tool selections not yet approved
+  from the inventory.
+- Additional Neovim/LazyVim choices, agent, SSH, and service configuration.
 - Additional macOS defaults, LaunchAgents, permissions, and security settings.
-- Omarchy Hyprland, autostart, theme, and hook customizations.
+- Omarchy Hyprland, autostart, and hook customizations.
 - Actual secret references, 1Password shell plugins, SSH agent, and credential
   workflows.
 - Package upgrades/removals, old runtime-manager cleanup, and the explicit future

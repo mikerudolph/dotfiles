@@ -5,21 +5,25 @@ case ":$PATH:" in
   *) PATH="$HOME/.local/bin:$PATH" ;;
 esac
 export PATH
+export EDITOR="nvim"
+export SUDO_EDITOR="$EDITOR"
 
-[[ -r "$DOTFILES_ROOT/shell/aliases.sh" ]] && . "$DOTFILES_ROOT/shell/aliases.sh"
+[[ -r "$DOTFILES_ROOT/shell/functions.sh" ]] && . "$DOTFILES_ROOT/shell/functions.sh"
+
+_dotfiles_shell_name="${ZSH_VERSION:+zsh}"
+_dotfiles_shell_name="${_dotfiles_shell_name:-bash}"
+
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate "$_dotfiles_shell_name")"
+fi
 
 if command -v starship >/dev/null 2>&1; then
-  if [[ -n "${ZSH_VERSION:-}" ]]; then
-    eval "$(starship init zsh)"
-  elif [[ -n "${BASH_VERSION:-}" ]]; then
-    eval "$(starship init bash)"
-  fi
+  eval "$(starship init "$_dotfiles_shell_name")"
 fi
 
 if command -v zoxide >/dev/null 2>&1; then
-  if [[ -n "${ZSH_VERSION:-}" ]]; then
-    eval "$(zoxide init zsh)"
-  elif [[ -n "${BASH_VERSION:-}" ]]; then
-    eval "$(zoxide init bash)"
-  fi
+  eval "$(zoxide init "$_dotfiles_shell_name")"
 fi
+
+unset _dotfiles_shell_name
+[[ -r "$DOTFILES_ROOT/shell/aliases.sh" ]] && . "$DOTFILES_ROOT/shell/aliases.sh"

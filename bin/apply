@@ -56,6 +56,10 @@ declare_package() {
   ensure_package "$@" || true
 }
 
+declare_directory() {
+  ensure_directory "$@" || true
+}
+
 declare_managed_file() {
   local name="$1"
   shift
@@ -98,8 +102,16 @@ declare_macos_dark_mode() {
   ensure_macos_dark_mode "$@" || true
 }
 
+declare_macos_wallpaper() {
+  ensure_macos_wallpaper "$@" || true
+}
+
 declare_macos_visible_directory() {
   ensure_macos_visible_directory "$@" || true
+}
+
+declare_macos_capslock_control() {
+  ensure_macos_capslock_control || true
 }
 
 declare_command_line_tools() {
@@ -119,6 +131,10 @@ declare_git_include() {
 }
 
 declare_shell_block() {
+  ensure_source_block "$@" || true
+}
+
+declare_config_block() {
   ensure_source_block "$@" || true
 }
 

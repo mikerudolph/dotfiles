@@ -66,14 +66,16 @@ in and security prompts cannot be bypassed.
 - [Apple Rosetta guidance](https://support.apple.com/en-us/102527)
 
 The macOS application decisions are intentionally macOS-only. Omarchy retains
-Foot and its upstream-installed Docker, Codex, Discord, Tailscale, and Claude
-Code integrations. Notion, Linear, VS Code, Google Earth Pro, FlightWall,
-Spotify, Cursor, and iTerm are not desired state; normal apply does not remove
-old software, so cleanup remains an explicit future migration if wanted.
+Foot and its upstream-installed Docker, Codex, Discord, and Claude Code
+integrations. Tailscale and Dropbox are explicit Omarchy package declarations;
+their service activation and account authentication remain interactive. Notion,
+Linear, VS Code, Google Earth Pro, FlightWall, Spotify, Cursor, and iTerm are not
+desired state; normal apply does not remove old software, so cleanup remains an
+explicit future migration if wanted.
 
 Homebrew/Workbrew casks provide the maintained runtime download metadata for
 Docker Desktop, Raycast, Codex CLI, Discord, Chrome, Tailscale's standalone app,
-Insta360 Link Controller, and Claude Code. On Apple silicon ChatGPT uses OpenAI's
+Wispr Flow, Granola, Insta360 Link Controller, and Claude Code. On Apple silicon ChatGPT uses OpenAI's
 current official DMG URL with its Apple Team ID as the trust anchor; the cask
 selects OpenAI's x64 artifact on Intel. Alacritty's cask is scheduled for
 disablement on 2026-09-01 because it fails Gatekeeper, so its official v0.17.0
@@ -87,6 +89,9 @@ manual.
 - [Tailscale macOS variants](https://tailscale.com/docs/concepts/macos-variants)
 - [Tailscale system-extension approval](https://tailscale.com/kb/1340/macos-sysext)
 - [Insta360 Link Controller installation](https://onlinemanual.insta360.com/link2pro/en-us/tutorial/link-controller/download%2Binstallation)
+- [Arch Linux Tailscale package](https://archlinux.org/packages/extra/x86_64/tailscale/)
+- [Arch Linux kubectl package](https://archlinux.org/packages/extra/x86_64/kubectl/)
+- [AUR Dropbox package](https://aur.archlinux.org/packages/dropbox)
 
 ## Omamac macOS defaults reference
 
@@ -126,3 +131,67 @@ for normal reconciliation.
 - [Omamac workspace checklist and setup](https://github.com/omacom-io/omamac/blob/824018b6198ac82cfdc05b5d36c53e56becc11a2/install.sh)
 - [Omamac hotkey overview](https://github.com/omacom-io/omamac/blob/824018b6198ac82cfdc05b5d36c53e56becc11a2/README.md#hotkeys)
 - [Hammerspoon Spaces limitations](https://www.hammerspoon.org/docs/hs.spaces.html)
+
+## Omamac application configuration and Omadots review
+
+Omamac commit `824018b6198ac82cfdc05b5d36c53e56becc11a2` supplies a plain
+Alacritty TOML file, two plain Raycast Script Commands, and an encrypted full
+Raycast export. The declarative files were adapted into this repository. The
+full export was rejected because Raycast's current export format can contain AI
+chats, clipboard history, notes, MCP servers, snippets, extensions, settings,
+aliases, and hotkeys. Raycast officially supports adding a version-controlled
+Script Command directory and assigning command hotkeys in its UI.
+
+- [Omamac Alacritty configuration](https://github.com/omacom-io/omamac/blob/824018b6198ac82cfdc05b5d36c53e56becc11a2/config/alacritty/alacritty.toml)
+- [Omamac Raycast Script Commands](https://github.com/omacom-io/omamac/tree/824018b6198ac82cfdc05b5d36c53e56becc11a2/config/raycast/script-commands)
+- [Raycast Script Commands](https://manual.raycast.com/script-commands)
+- [Raycast import and export contents](https://manual.raycast.com/import-export)
+- [Alacritty configuration reference](https://alacritty.org/config-alacritty.html)
+
+Omadots commit `556354683664f4143776296d76df75c0fa29059a` was reviewed in
+detail. Its shell and Neovim features are catalogued for selective adoption in
+[`docs/omadots-review.md`](omadots-review.md). None of those features are desired
+state until explicitly selected.
+
+The later explicit selection adopted the shared LazyVim starter without
+Neo-tree or language extras, enabled Neovim `autoread`, and added
+`sindrets/diffview.nvim`. lazy.nvim supports automatic missing-plugin installs
+and a configurable lockfile; because tracked locking was not selected, the
+lockfile is routed to Neovim's XDG state directory.
+
+- [Diffview.nvim](https://github.com/sindrets/diffview.nvim)
+- [lazy.nvim structured installation](https://lazy.folke.io/installation)
+- [lazy.nvim lockfiles](https://lazy.folke.io/usage/lockfile)
+
+## Tokyo Night integration
+
+Tokyo Night Night is the explicit macOS cross-tool palette. The upstream Neovim
+theme generates maintained extras for Alacritty, eza, fzf, and lazygit; this
+repository vendors small reviewed adapters from commit
+`cdc07ac78467a233fd62c493de29a17e0cf2b2b6` and records their provenance beside
+them. Neovim consumes the plugin normally through LazyVim instead of vendoring
+plugin code.
+
+Lazygit officially supports a comma-separated `LG_CONFIG_FILE` list and merges
+the files in order, which gives its theme a composable ownership boundary. K9s
+supports standalone skins and the `K9S_SKIN` selector. Current Omarchy includes
+Tokyo Night as a stock theme, renders application files from `colors.toml`, and
+keeps generated active state below `~/.local/state/omarchy/current`. The final
+architecture deliberately makes no theme selection and installs no Tokyo Night
+adapters on Omarchy, leaving that entire lifecycle to Omarchy.
+
+- [Tokyo Night extras](https://github.com/folke/tokyonight.nvim/tree/cdc07ac78467a233fd62c493de29a17e0cf2b2b6/extras)
+- [Tokyo Night Neovim usage](https://github.com/folke/tokyonight.nvim#-installation)
+- [Lazygit configuration precedence](https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md#config-file-locations)
+- [K9s skins](https://github.com/derailed/k9s#skins)
+- [Omarchy theming](https://github.com/basecamp/omarchy/blob/quattro/docs/theming.md)
+- [Omarchy Tokyo Night palette](https://github.com/basecamp/omarchy/blob/quattro/themes/tokyo-night/colors.toml)
+
+Codex supports custom TextMate `.tmTheme` files in `$CODEX_HOME/themes` and
+saves selection through its `/theme` picker. Claude Code 2.1.118 and later
+supports standalone JSON themes in `~/.claude/themes`, also selected with
+`/theme`. Both settings files contain unrelated local state, so the dotfiles
+link only the standalone theme artifacts and report the one-time selection.
+
+- [Codex CLI customization](https://developers.openai.com/codex/cli-customization)
+- [Claude Code terminal themes](https://code.claude.com/docs/en/terminal-config)

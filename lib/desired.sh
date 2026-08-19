@@ -16,11 +16,23 @@ desired_packages() {
   declare_package "k9s" k9s k9s k9s
   declare_package "Starship" starship starship starship
   declare_package "zoxide" zoxide zoxide zoxide
+  declare_package "eza" eza eza eza
+  declare_package "fzf" fzf fzf fzf
+  declare_package "kubectl" kubectl kubectl kubectl
   if [[ "${OS:-}" == "macos" ]]; then
     declare_package "mactop" mactop mactop ""
     declare_package "zsh-autosuggestions" zsh-autosuggestions zsh-autosuggestions ""
     declare_package "zsh-syntax-highlighting" zsh-syntax-highlighting zsh-syntax-highlighting ""
     declare_package "Mac App Store CLI" mas mas ""
+  elif [[ "${OS:-}:${FLAVOR:-}" == "linux:omarchy" ]]; then
+    declare_package "Tailscale" tailscale "" tailscale
+    declare_package "Dropbox" dropbox "" dropbox
+  fi
+}
+
+desired_directories() {
+  if [[ "${OS:-}" == "macos" ]]; then
+    declare_directory "$DOTFILES_XDG_STATE_HOME/zsh"
   fi
 }
 
@@ -41,6 +53,7 @@ desired_macos_state() {
   desired_macos_applications
   macos_defaults_init
   desired_macos_defaults
+  declare_macos_capslock_control
   apply_macos_default_restarts
   declare_macos_app "Xcode" 497799835 /Applications/Xcode.app
   declare_xcode_developer_directory
@@ -53,6 +66,119 @@ desired_managed_files() {
     "$DOTFILES_ROOT/config/mise/config.toml" \
     "$DOTFILES_CONFIG_HOME/mise/config.toml" \
     "mise configuration"
+  declare_managed_file "nvim" \
+    "$DOTFILES_ROOT/config/nvim" \
+    "$DOTFILES_CONFIG_HOME/nvim" \
+    "Neovim configuration"
+  if [[ "${OS:-}" == "macos" ]]; then
+    local codex_config_home="${CODEX_HOME:-$HOME/.codex}"
+    declare_managed_file "starship" \
+      "$DOTFILES_ROOT/config/starship.toml" \
+      "$DOTFILES_CONFIG_HOME/starship.toml" \
+      "Starship configuration"
+    declare_managed_file "eza-theme" \
+      "$DOTFILES_ROOT/themes/tokyonight/eza.yml" \
+      "$DOTFILES_CONFIG_HOME/eza/theme.yml" \
+      "eza Tokyo Night theme"
+
+    local k9s_data_home="$DOTFILES_DATA_HOME"
+    if [[ -z "${XDG_DATA_HOME:-}" ]]; then
+      k9s_data_home="$HOME/Library/Application Support"
+    fi
+    declare_managed_file "k9s-theme" \
+      "$DOTFILES_ROOT/themes/tokyonight/k9s.yaml" \
+      "$k9s_data_home/k9s/skins/tokyonight.yaml" \
+      "K9s Tokyo Night skin"
+
+    declare_managed_file "alacritty" \
+      "$DOTFILES_ROOT/config/alacritty/alacritty.toml" \
+      "$DOTFILES_CONFIG_HOME/alacritty/alacritty.toml" \
+      "Alacritty configuration"
+    declare_managed_file "raycast-term" \
+      "$DOTFILES_ROOT/config/raycast/script-commands/new-alacritty.sh" \
+      "$DOTFILES_CONFIG_HOME/raycast/script-commands/new-alacritty.sh" \
+      "Raycast new-Alacritty command"
+    declare_managed_file "raycast-web" \
+      "$DOTFILES_ROOT/config/raycast/script-commands/new-chrome.sh" \
+      "$DOTFILES_CONFIG_HOME/raycast/script-commands/new-chrome.sh" \
+      "Raycast new-Chrome command"
+    declare_managed_file "hushlogin" \
+      "$DOTFILES_ROOT/config/shell/hushlogin" \
+      "$HOME/.hushlogin" \
+      "login-message suppression"
+    declare_managed_file "xcode-theme" \
+      "$DOTFILES_ROOT/config/xcode/Tokyo Night.xccolortheme" \
+      "$HOME/Library/Developer/Xcode/UserData/FontAndColorThemes/Tokyo Night.xccolortheme" \
+      "Xcode Tokyo Night theme"
+    declare_managed_file "codex-theme" \
+      "$DOTFILES_ROOT/themes/tokyonight/codex/tokyonight-night.tmTheme" \
+      "$codex_config_home/themes/tokyonight-night.tmTheme" \
+      "Codex Tokyo Night theme"
+    declare_managed_file "claude-theme" \
+      "$DOTFILES_ROOT/themes/tokyonight/claude/tokyonight-night.json" \
+      "$HOME/.claude/themes/tokyonight-night.json" \
+      "Claude Code Tokyo Night theme"
+    declare_managed_file "capslock-helper" \
+      "$DOTFILES_ROOT/platform/macos/capslock-control.sh" \
+      "$HOME/Library/Application Support/dotfiles/capslock-control.sh" \
+      "Caps Lock mapping helper"
+    declare_managed_file "capslock-agent" \
+      "$DOTFILES_ROOT/platform/macos/services/com.mikerudolph.dotfiles.capslock-control.plist" \
+      "$HOME/Library/LaunchAgents/com.mikerudolph.dotfiles.capslock-control.plist" \
+      "Caps Lock login LaunchAgent"
+  fi
+}
+
+desired_omarchy_keyboard() {
+  local input_file content
+  [[ "${OS:-}:${FLAVOR:-}" == "linux:omarchy" ]] || return 0
+  # Omarchy's bootstrap currently adds this literal user path to Lua's module
+  # search path, so follow the upstream layer even when XDG_CONFIG_HOME differs.
+  input_file="$HOME/.config/hypr/input.lua"
+
+  if [[ ! -f "$HOME/.config/hypr/hyprland.lua" && \
+        ! -f "/usr/share/omarchy/default/hypr/bootstrap.lua" && \
+        "${DOTFILES_TEST_OMARCHY_LUA:-0}" != "1" ]]; then
+    report_manual "Caps Lock remapping requires Omarchy's current Lua user input layer (~/.config/hypr/input.lua)"
+    return 0
+  fi
+
+  content='local dotfiles_current_options = hl.get_config("input.kb_options") or ""
+local dotfiles_kept_options = {}
+
+for option in tostring(dotfiles_current_options):gmatch("[^,%s]+") do
+  local uses_caps_key = option == "compose:caps"
+    or option:match("^caps:")
+    or option:match("^grp:caps")
+    or option:match("^lv3:caps")
+    or option:match("^ctrl:.*caps")
+  if not uses_caps_key then
+    table.insert(dotfiles_kept_options, option)
+  end
+end
+
+table.insert(dotfiles_kept_options, "ctrl:nocaps")
+hl.config({ input = { kb_options = table.concat(dotfiles_kept_options, ",") } })'
+  declare_config_block "$input_file" "capslock-control" "$content" \
+    "Caps Lock as Control" "--"
+}
+
+desired_macos_raycast_guidance() {
+  [[ "${OS:-}" == "macos" ]] || return 0
+  report_manual "In Raycast, add $DOTFILES_CONFIG_HOME/raycast/script-commands as a Script Directory"
+  report_manual "Set Raycast to Command-Space; bind New Alacritty Window to Command-Control-Return and New Chrome Window to Command-Control-Shift-Return"
+}
+
+desired_macos_theme_guidance() {
+  [[ "${OS:-}" == "macos" ]] || return 0
+  report_manual "In Codex, run /theme and select Tokyo Night Night"
+  report_manual "In Claude Code 2.1.118 or later, run /theme and select Tokyo Night Night"
+}
+
+desired_omarchy_application_guidance() {
+  [[ "${OS:-}:${FLAVOR:-}" == "linux:omarchy" ]] || return 0
+  report_manual "Run 'sudo systemctl enable --now tailscaled', then 'tailscale up' to authenticate this machine"
+  report_manual "Launch Dropbox and complete its interactive sign-in"
 }
 
 desired_git_includes() {
@@ -63,6 +189,18 @@ desired_git_includes() {
     machine_config="$DOTFILES_CONFIG_HOME/git/config"
   fi
   declare_git_include "$DOTFILES_ROOT/config/git/config" "$machine_config"
+  if [[ "${OS:-}" == "macos" ]]; then
+    declare_git_include "$DOTFILES_ROOT/config/git/macos" "$machine_config"
+  fi
+  # This deliberately comes last so work identity, signing, credentials, and
+  # machine policy can override every shared and platform default.
+  declare_git_include "$HOME/.gitconfig.local" "$machine_config"
+}
+
+desired_git_signing_guidance() {
+  if ! git config --global --get user.signingKey >/dev/null 2>&1; then
+    report_manual "In 1Password, open the SSH key to use for Git, choose Configure Commit Signing, and save its public key as user.signingKey"
+  fi
 }
 
 desired_shell_blocks() {
@@ -101,11 +239,17 @@ if [ -x $brew_quoted ]; then eval \"\$($brew_quoted shellenv)\"; fi"
 
 reconcile_desired_state() {
   desired_packages
+  desired_directories
   desired_managed_files
   desired_mise_tools
   desired_git_includes
+  desired_git_signing_guidance
   desired_shell_blocks
+  desired_omarchy_keyboard
   desired_macos_state
+  desired_macos_raycast_guidance
+  desired_macos_theme_guidance
+  desired_omarchy_application_guidance
   run_pending_migrations
   onepassword_manual_guidance
 }

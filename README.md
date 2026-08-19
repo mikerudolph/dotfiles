@@ -21,17 +21,21 @@ Omarchy, native packages go through `omarchy-pkg-add`.
 
 The deliberately selected native tools currently include 1Password CLI, mise,
 bat, glow, GitHub CLI, ffmpeg, AWS CLI, Neovim, lazygit, lazydocker, k9s,
-Starship, and zoxide. macOS additionally gets mactop and the two Zsh enhancement
-plugins. Node LTS, Bun, pnpm, Go, Python, Ruby, Rust, and Terraform are declared
-through mise rather than the native package manager.
+Starship, zoxide, eza, fzf, and kubectl. macOS additionally gets mactop and the
+two Zsh enhancement plugins. Omarchy additionally installs Tailscale and
+Dropbox through its supported package helper. Node LTS, Bun, pnpm, Go, Python,
+Ruby, Rust, and Terraform are declared through mise rather than the native
+package manager.
 
 On macOS, the selected application layer installs Alacritty, Docker Desktop,
-Raycast, ChatGPT, Codex CLI, Discord, Google Chrome, Dropbox, Tailscale, Insta360
-Link Controller, and Claude Code. These declarations do not run on Omarchy, where the
-platform already supplies the corresponding Linux tools and Foot remains the
-terminal. Existing application bundles or CLI commands satisfy the declarations,
-so apply does not replace a direct/self-updating installation just to change its
-provenance.
+Raycast, ChatGPT, Codex CLI, Discord, Google Chrome, Dropbox, Tailscale, Wispr
+Flow, Granola, Insta360 Link Controller, Claude Code, and the JetBrains Mono Nerd
+Font used by Alacritty.
+These macOS application declarations do not run on Omarchy, where Foot remains
+the terminal and platform packages supply the selected Linux applications.
+Existing application bundles, installed casks, or CLI commands satisfy the
+declarations, so apply does not replace a direct/self-updating installation just
+to change its provenance.
 
 Before changing anything, inspect the plan and the machine:
 
@@ -50,6 +54,29 @@ git pull --ff-only
 Or use `./bin/update`, which refuses a dirty checkout, fast-forwards only, and
 then invokes `apply`. Shell startup never performs these operations.
 
+## Tokyo Night
+
+On macOS, Tokyo Night **Night** is the selected color scheme. Managed adapters
+cover the desktop wallpaper, Xcode, Codex CLI, Claude Code, Alacritty,
+Neovim/LazyVim, Starship, eza, fzf, lazygit, and K9s; bat uses
+its ANSI theme so syntax colors follow the active terminal palette without a
+generated theme cache. Lazygit's theme is appended to its supported multi-file
+configuration list, while K9s uses a dedicated skin, so neither integration
+replaces machine-local or per-context settings.
+
+Omarchy is intentionally excluded from this theme layer. The dotfiles neither
+select an Omarchy theme nor link theme adapters there; Omarchy's own selector
+remains the sole authority for Foot and its integrated applications. Vendored
+macOS adapter provenance is recorded in
+[`themes/tokyonight/README.md`](themes/tokyonight/README.md).
+
+The wallpaper is reconciled across macOS Desktop Spaces and coordinates with
+the transparent menu bar. macOS uses its native blue accent plus a Tokyo Night
+blue text-selection highlight. Xcode selects the managed theme automatically.
+Codex and Claude Code deliberately keep their mixed local settings files: after
+the theme files are linked, run `/theme` once in each CLI and select
+`Tokyo Night Night`.
+
 ## Safety model
 
 Whole-file configuration uses symlinks. A missing destination may be created; a
@@ -61,6 +88,16 @@ marker-delimited source block. The machine-local Git config receives only an
 `include.path` entry. Existing settings, credential helpers, comments, and local
 overrides remain local. Malformed managed markers, non-regular destinations, and
 invalid Git configuration become conflicts rather than rewrite opportunities.
+
+The shared Git include sets the default branch and personal identity, prunes
+deleted remote branches during fetch, sorts branches by recent activity and tags
+by version, pushes the current branch with automatic upstream setup, enables SSH
+commit signing, and provides a small alias set. A separate macOS include selects
+1Password's app-bundled signing helper. Apply includes the optional, untracked
+`~/.gitconfig.local` last, allowing work identity, signing keys, credential
+helpers, and machine policy to override shared defaults without editing the
+repository. The selected `user.signingKey` remains local because it identifies a
+specific public key in 1Password.
 
 `bin/adopt` is inspection-only in this release. It reports whether a named
 destination is missing, managed, or unmanaged without reading or moving its
@@ -133,6 +170,15 @@ experimental private APIs and requires Accessibility control of Mission Control.
 Preferences from the machine inventory or another repository are never enabled
 without an explicit choice.
 
+Caps Lock is remapped to left Control on both platforms. macOS uses a merged
+`hidutil` `UserKeyMapping`: apply changes only the Caps Lock entry, preserves
+unrelated mappings, and installs a managed user LaunchAgent to restore it at
+login. Omarchy gets a bounded Lua block in its supported
+`~/.config/hypr/input.lua` user layer. The block removes options that assign the
+physical Caps Lock key another role (including Omarchy's Compose binding), adds
+`ctrl:nocaps`, and preserves unrelated keyboard-layout options. Existing content
+outside the markers remains machine-local; malformed markers are a conflict.
+
 ## macOS application sources
 
 Native applications are declared in `packages/macos.sh`. Homebrew/Workbrew casks
@@ -150,6 +196,65 @@ an expected Apple signing team; unsigned or non-notarized upstream releases must
 instead have a pinned digest. Security approvals are reported for the user and
 are never bypassed.
 
+## Alacritty, Raycast, and login presentation
+
+The macOS Alacritty configuration combines Omamac's buttonless window, generous
+padding, and Option-as-Alt behavior with the current upstream Tokyo Night Night
+palette. It adds dynamic padding and a bold-italic face, and deliberately lets
+Alacritty choose the best installed terminfo instead of forcing
+`TERM=xterm-256color`. Apply safely links it at
+`${XDG_CONFIG_HOME:-~/.config}/alacritty/alacritty.toml`; an existing unmanaged
+file is reported as a conflict.
+
+Raycast receives two reviewable Script Commands for opening fresh Alacritty and
+Chrome windows. Apply links them under
+`${XDG_CONFIG_HOME:-~/.config}/raycast/script-commands`; Raycast still requires a
+one-time **Settings → Script Commands → Add Script Directory** action and manual
+hotkey assignment. Use `Command-Space` for Raycast, `Command-Control-Return` for a
+new Alacritty window, and `Command-Control-Shift-Return` for a new Chrome window.
+
+Omamac's encrypted `Raycast.rayconfig` is intentionally not tracked or imported.
+Modern Raycast exports can include chats, clipboard history, notes, MCP servers,
+snippets, and other private or generated state, and Omamac publishes a shared
+export password. A personal Raycast backup belongs in an encrypted private backup
+location, not this repository.
+
+On macOS, `.hushlogin` is a repo-owned empty file linked into `$HOME` to suppress
+the login banner. The same missing/managed/unmanaged ownership rules apply.
+
+## Shell behavior
+
+Shared startup config sets Neovim as `EDITOR`/`SUDO_EDITOR`, activates mise,
+Starship, and zoxide without network or package activity, and provides the
+selected Omadots-inspired helpers. Eza powers `ls`, `lsa`, `lt`, and `lta`;
+`..`, `...`, and `....` navigate parent directories; `n` opens Neovim; and
+`ff`, `eff`, and `sff` use fzf with Bat previews for file selection.
+
+`cd` is deliberately aliased to `zd`: existing paths retain normal `cd`
+semantics, while non-path arguments are resolved through zoxide. Zsh gets
+case-insensitive eager completion, typed-prefix history arrows, shared
+deduplicated history under `${XDG_STATE_HOME:-~/.local/state}/zsh`, extended
+globbing, automatic directory changes, symlink traversal, interactive comments,
+and no terminal bell. It preserves the user's current ZLE keymap instead of
+forcing Emacs bindings. Omarchy Bash gets equivalent Readline completion/history
+navigation behavior and prompt-display cleanup before Starship renders.
+
+## Neovim
+
+`config/nvim` is a common macOS/Omarchy LazyVim starter managed as one directory
+symlink. It explicitly enables `autoread` and installs
+[`sindrets/diffview.nvim`](https://github.com/sindrets/diffview.nvim), exposing
+the standard `:DiffviewOpen`, `:DiffviewFileHistory`, and related commands. On
+macOS only, the Tokyo Night plugin is loaded at high priority with the `night`
+style and selected through LazyVim's supported `colorscheme` option. On Omarchy,
+the plugin adapter is inert so the platform's theme selector remains authoritative.
+
+Because reproducible lockfile management was not selected, lazy.nvim writes its
+generated lockfile below Neovim's XDG state directory rather than into this
+repository. Plugin binaries, caches, logs, sessions, and other runtime data also
+remain outside the managed configuration. An existing unmanaged
+`~/.config/nvim` is a conflict and is never moved or replaced by ordinary apply.
+
 ## Layout
 
 ```text
@@ -163,7 +268,6 @@ config/                fully managed or included application configuration
 shell/                 cheap shared and shell-specific startup fragments
 migrations/            reviewed one-time transitions
 docs/                   architecture and research notes
-test/                   host-independent shell tests
 ```
 
 See [docs/architecture.md](docs/architecture.md) for execution and ownership
@@ -171,10 +275,6 @@ details and [docs/research.md](docs/research.md) for the upstream decisions.
 
 ## Development
 
-```sh
-./test/run
-```
-
-The test runner syntax-checks every shell script and exercises platform detection,
-unsupported-platform failure, managed/unmanaged files, dry-run behavior,
-migrations, and repeated reconciliation in isolated temporary homes.
+Syntax-check changed shell scripts with `bash -n` (and `zsh -n` for Zsh
+fragments). Exercise reconciliation changes through `./bin/apply --dry-run` so
+the live machine remains unchanged while reviewing the plan.

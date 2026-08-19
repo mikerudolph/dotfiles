@@ -1,3 +1,38 @@
-# Shared Git settings belong here. Identity, credential helpers, work-specific
-# includes, and other machine-local state remain in the including local file.
+# Shared personal defaults. Platform signing programs and machine-local
+# overrides are composed separately by apply.
 
+[init]
+	defaultBranch = main
+
+[user]
+	name = Mike Rudolph
+	email = heymikerudolph@gmail.com
+
+[fetch]
+	prune = true
+
+[branch]
+	sort = -committerdate
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[tag]
+	sort = version:refname
+
+[gpg]
+	format = ssh
+
+[commit]
+	gpgSign = true
+
+[alias]
+	l = log
+	b = branch
+	plr = pull --rebase
+	s = status -sb
+	co = checkout
+	lg = log --oneline --graph --decorate --all
+	df = diff
+	dc = diff --cached
