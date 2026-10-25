@@ -74,10 +74,12 @@ macOS adapter provenance is recorded in
 
 The wallpaper is reconciled across macOS Desktop Spaces and coordinates with
 the transparent menu bar. macOS uses its native blue accent plus a Tokyo Night
-blue text-selection highlight. Xcode selects the managed theme automatically.
-Codex and Claude Code deliberately keep their mixed local settings files: after
-the theme files are linked, run `/theme` once in each CLI and select
-`Tokyo Night Night`.
+blue text-selection highlight, and Xcode selects the managed theme automatically.
+Chrome, Codex, and Claude Code deliberately keep their mixed local profile and
+settings files. After signing in to Chrome, use the reviewed Web Store link
+reported by `apply` to install the source-available Tokyo Night theme through
+Chrome itself. After the CLI theme files are linked, run `/theme` once in Codex
+and Claude Code and select `Tokyo Night Night`.
 
 ## Safety model
 
@@ -163,10 +165,11 @@ The selected baseline currently enables dark appearance; places and auto-hides a
 reveal; uses fast key repeat with an initial delay of 25; and applies the selected
 developer-oriented Finder, text-input, save-panel, Dock, TextEdit, and keyboard
 navigation preferences. On macOS 26 it selects Clear Liquid Glass and a transparent
-menu bar; it also disables wallpaper tinting, hides all desktop icons, keeps a
-minimal menu bar with Focus always visible, enables margin-free native tiling,
-sets Activity Monitor's developer view, and prevents Photos from opening for
-connected devices. The user Library directory is revealed through a separate
+menu bar; it also disables wallpaper tinting, reduces interface motion (including
+Desktop Space transitions), hides all desktop icons and widgets, keeps a minimal
+menu bar with Focus always visible, enables margin-free native tiling, sets
+Activity Monitor's developer view, and prevents Photos from opening for connected
+devices. The user Library directory is revealed through a separate
 idempotent filesystem action. Screenshots use SDR/PNG without shadows or a
 floating thumbnail and are stored in `~/Pictures/Screenshots`, which apply creates
 safely when missing. Natural scrolling, tap-to-click, standard function-key mode,
@@ -175,9 +178,11 @@ deliberately unmanaged.
 
 Desktop switching follows Omamac's muscle memory: Apple's symbolic-hotkey entries
 118–126 are reconciled individually to `Command-1` through `Command-9`, preserving
-all unrelated shortcuts. macOS only exposes destinations that actually exist, so
-doctor/apply reports a manual action until nine Desktop Spaces have been created.
-Space creation is not automated because the available Hammerspoon route uses
+all unrelated shortcuts. Changed entries are reloaded immediately so they do not
+require a logout before taking effect. macOS only exposes destinations that
+actually exist, so doctor/apply reports a manual action until nine Desktop Spaces
+have been created; rerunning `apply` then activates all nine destinations. Space
+creation is not automated because the available Hammerspoon route uses
 experimental private APIs and requires Accessibility control of Mission Control.
 Preferences from the machine inventory or another repository are never enabled
 without an explicit choice.

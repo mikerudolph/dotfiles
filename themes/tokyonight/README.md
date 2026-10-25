@@ -23,6 +23,11 @@ a tool mixes theme and machine-local configuration.
 
 - macOS: Omarchy's native 6016×3384 Tokyo Night winding-road wallpaper, native
   blue accent and selection highlight, and a transparent menu bar.
+- Chrome: `apply` verifies the active profile's exact theme extension ID and
+  reports the reviewed Web Store theme when it differs. Its source is
+  [`mattCasanova/tokyo-night-storm-google-chrome`](https://github.com/mattCasanova/tokyo-night-storm-google-chrome),
+  which uses Tokyo Night's base and accent palette. Chrome owns installation
+  and sync; mixed profile files remain local and untouched.
 - Alacritty: palette embedded in the managed Alacritty file.
 - Neovim/LazyVim: `folke/tokyonight.nvim`, `night` style.
 - Starship: named palette in the managed prompt file.

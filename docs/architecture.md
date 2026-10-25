@@ -79,9 +79,10 @@ must be selected locally before signed commits can succeed.
 
 Control Center settings that macOS stores per host use the same typed primitive
 with `defaults -currentHost`. Workspace shortcuts are merged one dictionary entry
-at a time rather than replacing `AppleSymbolicHotKeys`. Creating or removing
-Spaces remains manual because the available automation relies on private APIs and
-Accessibility-driven Mission Control interaction.
+at a time rather than replacing `AppleSymbolicHotKeys`, then macOS reloads changed
+shortcut bindings through its system-provided user-settings activator. Creating
+or removing Spaces remains manual because the available automation relies on
+private APIs and Accessibility-driven Mission Control interaction.
 
 Keyboard remapping is also platform-native and composable. On macOS, a managed
 helper merges Caps Lock → left Control into `hidutil`'s global mapping array and a
@@ -123,8 +124,10 @@ comma-separated config list, preserving an explicit or default machine-local
 config. On Omarchy, dotfiles neither invokes the theme selector nor installs
 these adapters; Omarchy exclusively owns its active theme and generated state.
 The macOS wallpaper and native accent/highlight are bounded preferences rather
-than managed files. Codex and Claude theme selection remains interactive so
-their mixed settings, authentication, plugin, and trusted-project state stays
+than managed files. Chrome theme selection remains a checked, one-time Web Store
+action so Chrome owns installation and sync while its profile stays local and
+untouched. Codex and Claude theme selection is likewise interactive so their
+mixed settings, authentication, plugin, and trusted-project state stays
 machine-local.
 
 macOS system requirements use narrowly scoped reconcilers: `mas get` for

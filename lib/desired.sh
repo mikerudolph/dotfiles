@@ -198,6 +198,25 @@ desired_macos_raycast_guidance() {
 
 desired_macos_theme_guidance() {
   [[ "${OS:-}" == "macos" ]] || return 0
+  local chrome_state chrome_profile chrome_preferences chrome_theme_id
+  chrome_state="$HOME/Library/Application Support/Google/Chrome/Local State"
+  chrome_profile="Default"
+  if [[ -f "$chrome_state" ]]; then
+    chrome_profile="$(plutil -extract profile.last_active_profiles.0 raw -o - \
+      "$chrome_state" 2>/dev/null || printf 'Default\n')"
+  fi
+  case "$chrome_profile" in
+    ""|.|..|*/*) chrome_profile="Default" ;;
+  esac
+  chrome_preferences="$HOME/Library/Application Support/Google/Chrome/$chrome_profile/Preferences"
+  chrome_theme_id="$(plutil -extract extensions.theme.id raw -o - \
+    "$chrome_preferences" 2>/dev/null || true)"
+  if [[ "$chrome_theme_id" == "aakhaadhgkiaeogdahlegpmnmnhllbhm" ]]; then
+    report_add unchanged "Chrome Tokyo Night theme"
+  else
+    report_manual \
+      "Install the reviewed Tokyo Night theme in Chrome: https://chromewebstore.google.com/detail/aakhaadhgkiaeogdahlegpmnmnhllbhm"
+  fi
   report_manual "In Codex, run /theme and select Tokyo Night Night"
   report_manual "In Claude Code 2.1.118 or later, run /theme and select Tokyo Night Night"
 }

@@ -58,6 +58,9 @@ desired_macos_defaults() {
     "Do not tint windows with the wallpaper" \
     NSGlobalDomain AppleReduceDesktopTinting bool true
   declare_macos_default \
+    "Reduce interface motion, including Desktop Space transitions" \
+    com.apple.universalaccess reduceMotion bool true Dock
+  declare_macos_default \
     "Keep the menu bar visible outside full screen" \
     NSGlobalDomain _HIHideMenuBar bool false SystemUIServer
   declare_macos_default \
@@ -153,6 +156,12 @@ desired_macos_defaults() {
   declare_macos_default \
     "Keep desktop icons hidden by Window Manager" \
     com.apple.WindowManager StandardHideDesktopIcons bool true Finder
+  declare_macos_default \
+    "Hide widgets on the desktop" \
+    com.apple.WindowManager StandardHideWidgets bool true
+  declare_macos_default \
+    "Hide widgets in Stage Manager" \
+    com.apple.WindowManager StageManagerHideWidgets bool true
 
   declare_macos_default \
     "Avoid .DS_Store files on network volumes" \

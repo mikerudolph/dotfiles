@@ -3,6 +3,8 @@
 macos_defaults_init() {
   MACOS_DEFAULT_RESTARTS=()
   MACOS_DEFAULTS_DIRTY=0
+  MACOS_USER_SETTINGS_ACTIVATION_REQUIRED=0
+  MACOS_USER_SETTINGS_DIRTY=0
 }
 
 _normalize_macos_default() {
@@ -102,6 +104,8 @@ ensure_macos_symbolic_hotkey() {
   if [[ "${DOTFILES_DRY_RUN:-0}" == "1" ]]; then
     report_add configure "$label (macOS symbolic hotkey $hotkey_id)"
     MACOS_DEFAULTS_DIRTY=1
+    MACOS_USER_SETTINGS_ACTIVATION_REQUIRED=1
+    MACOS_USER_SETTINGS_DIRTY=1
     return 0
   fi
 
@@ -109,6 +113,8 @@ ensure_macos_symbolic_hotkey() {
   if defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add "$hotkey_id" "$payload"; then
     report_add changed "configured $label"
     MACOS_DEFAULTS_DIRTY=1
+    MACOS_USER_SETTINGS_ACTIVATION_REQUIRED=1
+    MACOS_USER_SETTINGS_DIRTY=1
   else
     report_conflict "Failed to configure macOS keyboard shortcut: $label"
     return 1
@@ -149,8 +155,11 @@ check_macos_workspace_count() {
   count="$(macos_main_user_space_count 2>/dev/null || true)"
   if [[ -z "$count" || "$count" -lt "$desired" ]]; then
     report_manual \
-      "Create $desired Desktop Spaces in Mission Control; Command-1 through Command-$desired are already managed"
+      "Create $desired Desktop Spaces in Mission Control, then rerun apply to activate Command-1 through Command-$desired"
   else
+    # Rebind the plist entries after the Spaces exist. activateSettings is
+    # idempotent, and this covers Spaces created after the first setup run.
+    MACOS_USER_SETTINGS_ACTIVATION_REQUIRED=1
     report_add unchanged "$desired Desktop Spaces are available"
   fi
 }
@@ -277,8 +286,27 @@ ensure_macos_capslock_control() {
 }
 
 apply_macos_default_restarts() {
-  local process
+  local process activate_settings
   [[ "${OS:-}" == "macos" ]] || return 0
+
+  if [[ "${MACOS_USER_SETTINGS_ACTIVATION_REQUIRED:-0}" == "1" ]]; then
+    activate_settings="/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings"
+    if [[ "${DOTFILES_DRY_RUN:-0}" == "1" ]]; then
+      if [[ "${MACOS_USER_SETTINGS_DIRTY:-0}" == "1" ]]; then
+        report_add configure "reload changed macOS keyboard shortcuts"
+      fi
+    elif [[ ! -x "$activate_settings" ]]; then
+      report_manual "Log out and back in to activate the changed macOS keyboard shortcuts"
+    elif "$activate_settings" -u >/dev/null 2>&1; then
+      if [[ "${MACOS_USER_SETTINGS_DIRTY:-0}" == "1" ]]; then
+        report_add changed "reloaded macOS keyboard shortcuts"
+      fi
+    else
+      report_conflict "Failed to reload the changed macOS keyboard shortcuts"
+      report_manual "Log out and back in to activate the changed macOS keyboard shortcuts"
+    fi
+  fi
+
   for process in "${MACOS_DEFAULT_RESTARTS[@]-}"; do
     [[ -n "$process" ]] || continue
     if [[ "${DOTFILES_DRY_RUN:-0}" == "1" ]]; then
