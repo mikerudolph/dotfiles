@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+set +x
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+DOTFILES_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)"
+export DOTFILES_ROOT
+source "$DOTFILES_ROOT/lib/paths.sh"
+source "$DOTFILES_ROOT/lib/platform.sh"
+source "$DOTFILES_ROOT/lib/logging.sh"
+source "$DOTFILES_ROOT/lib/github.sh"
+
+DOTFILES_DRY_RUN=0
+reference=""
+while (( $# > 0 )); do
+  case "$1" in
+    --dry-run) DOTFILES_DRY_RUN=1 ;;
+    -h|--help)
+      echo "Usage: bin/provision-github-auth [--dry-run] [op://vault/item/token]"
+      echo "Import the current 1Password GitHub plugin credential, or an explicit token field, into local gh authentication."
+      exit 0
+      ;;
+    op://*)
+      [[ -z "$reference" ]] || { echo "Specify one token reference" >&2; exit 2; }
+      reference="$1"
+      ;;
+    *) echo "Unknown argument; use --help" >&2; exit 2 ;;
+  esac
+  shift
+done
+dotfiles_paths_init
+platform_detect || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+platform_validate_supported || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+executable="$(github_cli_path)" || { echo "GitHub CLI is unavailable; run ./setup" >&2; exit 1; }
+provision_local_github_auth "$executable" "$reference"
+report_init
+ensure_legacy_github_shim_absent "$HOME/.local/bin/gh"
+if [[ "$DOTFILES_DRY_RUN" == "1" ]]; then
+  report_add configure "import the selected 1Password GitHub token into GitHub CLI's local credential storage"
+else
+  report_add changed "stored GitHub CLI authentication locally"
+fi
+report_render

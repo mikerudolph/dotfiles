@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+set +x
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+DOTFILES_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)"
+export DOTFILES_ROOT
+source "$DOTFILES_ROOT/lib/paths.sh"
+source "$DOTFILES_ROOT/lib/platform.sh"
+source "$DOTFILES_ROOT/lib/logging.sh"
+source "$DOTFILES_ROOT/lib/files.sh"
+source "$DOTFILES_ROOT/lib/ssh.sh"
+source "$DOTFILES_ROOT/lib/desired.sh"
+
+DOTFILES_DRY_RUN=0
+reference=""
+while (( $# > 0 )); do
+  case "$1" in
+    --dry-run) DOTFILES_DRY_RUN=1 ;;
+    -h|--help)
+      echo "Usage: bin/provision-ssh-key [--dry-run] 'op://vault/item/private key'"
+      echo "Export an unencrypted, owner-only key to ~/.ssh/id_dotfiles for SSH and Git signing."
+      exit 0
+      ;;
+    op://*)
+      [[ -z "$reference" ]] || { echo "Specify one private-key reference" >&2; exit 2; }
+      reference="$1"
+      ;;
+    *) echo "Unknown argument; use --help" >&2; exit 2 ;;
+  esac
+  shift
+done
+[[ -n "$reference" ]] || { echo "An SSH private-key reference is required; use --help" >&2; exit 2; }
+export DOTFILES_DRY_RUN
+dotfiles_paths_init
+platform_detect || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+platform_validate_supported || { echo "$PLATFORM_ERROR" >&2; exit 1; }
+report_init
+declare_git_include() { ensure_git_include "$@"; }
+
+key="$(local_ssh_key_path)"
+# Validate composable destinations before requesting vault access or exporting.
+(
+  DOTFILES_DRY_RUN=1
+  if ! reconcile_local_ssh_configuration "$key" "$HOME/.ssh/config" "$HOME/.gitconfig.local" ||
+      ! desired_git_includes; then
+    report_render
+    exit 3
+  fi
+)
+provision_local_ssh_key "$reference" "$key"
+if [[ "$DOTFILES_DRY_RUN" == "1" ]]; then
+  report_add configure "export the selected SSH key to ~/.ssh/id_dotfiles (unencrypted, mode 600) and derive its public key"
+else
+  report_add changed "provisioned the local SSH key and public key (mode 600)"
+fi
+reconcile_local_ssh_configuration "$key" "$HOME/.ssh/config" "$HOME/.gitconfig.local"
+desired_git_includes
+report_render

@@ -20,6 +20,18 @@ existing Homebrew, and bootstraps Homebrew only when neither exists. It never
 bypasses Workbrew by calling the underlying vanilla Homebrew directly. On
 Omarchy, native packages go through `omarchy-pkg-add`.
 
+On both platforms, interactive onboarding offers to provision a missing local
+SSH/signing key and GitHub CLI login from your selected 1Password field
+references. Enter an `op://` reference at each prompt, or press Enter to skip and
+rerun `./bin/onboard` later. The SSH key is exported unencrypted with mode `600`;
+GitHub CLI owns its local credential storage. Existing credentials are skipped.
+1Password desktop sign-in and CLI integration approval remain manual. Dry-run
+reports the prompts without reading vaults or exporting credentials; a
+non-interactive setup reports the commands to run later.
+
+Onboarding still runs when apply reports safe unmanaged-file conflicts, and
+setup preserves apply's conflict exit status. Unmanaged files remain untouched.
+
 The deliberately selected native tools currently include 1Password CLI, mise,
 bat, glow, GitHub CLI, ffmpeg, AWS CLI, Neovim, lazygit, lazydocker, k9s,
 Starship, zoxide, eza, fzf, and kubectl. macOS additionally gets mactop and the
@@ -96,12 +108,32 @@ invalid Git configuration become conflicts rather than rewrite opportunities.
 The shared Git include sets the default branch and personal identity, prunes
 deleted remote branches during fetch, sorts branches by recent activity and tags
 by version, pushes the current branch with automatic upstream setup, enables SSH
-commit signing, and provides a small alias set. A separate macOS include selects
-1Password's app-bundled signing helper. Apply includes the optional, untracked
-`~/.gitconfig.local` last, allowing work identity, signing keys, credential
+commit signing, and provides a small alias set. Git uses OpenSSH's `ssh-keygen`
+for signing with a locally provisioned private key. Apply includes the optional,
+untracked `~/.gitconfig.local` last, allowing work identity, signing keys, credential
 helpers, and machine policy to override shared defaults without editing the
-repository. The selected `user.signingKey` remains local because it identifies a
-specific public key in 1Password.
+repository. The selected `user.signingKey` remains local and points to
+`~/.ssh/id_dotfiles` after provisioning.
+
+Provision the selected SSH key once on each machine:
+
+```sh
+./bin/provision-ssh-key --dry-run 'op://vault/item/private key'
+./bin/provision-ssh-key 'op://vault/item/private key'
+```
+
+Use the private-key field reference from the chosen 1Password SSH item. This
+explicit command requires 1Password approval once, exports an unencrypted
+OpenSSH key to `~/.ssh/id_dotfiles` with mode `600`, and derives the matching
+public key. It refuses to replace either existing key file and never prints key
+material. The vault copy stays in 1Password.
+
+SSH uses the local key directly with `IdentityAgent none` and `IdentitiesOnly yes`.
+A bounded block at the start of `~/.ssh/config` takes precedence over an older
+1Password agent setting while preserving the rest of the file. Git receives a
+bounded signing block in `~/.gitconfig.local`; existing credential helpers and
+other overrides remain local. Ordinary `apply` maintains these blocks after the
+key exists, reports missing keys, and never fetches private keys from a vault.
 
 `bin/adopt` is inspection-only in this release. It reports whether a named
 destination is missing, managed, or unmanaged without reading or moving its
@@ -122,8 +154,9 @@ manual Dock choices remain machine-local.
 
 ## 1Password boundary
 
-The dotfiles install 1Password CLI but never store secret values and never query
-vault contents during doctor. Desktop sign-in and the security approval for CLI
+The dotfiles install 1Password CLI but never store secret values in the checkout
+and never query vault contents during doctor or ordinary apply. Local SSH key
+export requires the explicit provisioning command. Desktop sign-in and CLI
 integration remain manual. Doctor prints the current platform-specific action:
 
 - macOS: enable **Settings → Developer → Integrate with 1Password CLI**.
@@ -133,13 +166,33 @@ integration remain manual. Doctor prints the current platform-specific action:
 Future secrets should use scoped, on-demand mechanisms such as `op run` or
 `op read`; they should not be exported wholesale during shell startup.
 
-GitHub CLI authentication uses a managed executable shim at `~/.local/bin/gh`,
-not a shell alias. The shim removes its own directory from `PATH` and runs the
-real GitHub CLI through `op plugin run -- gh`. As a result, Claude Code, Codex,
-scripts, and interactive shells all receive the same scoped 1Password credential
-without storing a second token through `gh auth login` or exporting `GH_TOKEN`
-to the parent shell. Run `op plugin init gh` once and choose the intended global
-credential; sourcing 1Password's generated `gh` alias is unnecessary.
+GitHub CLI uses its native local authentication. Import the credential already
+selected by an existing 1Password GitHub shell plugin once:
+
+```sh
+./bin/provision-github-auth --dry-run
+./bin/provision-github-auth
+```
+
+On a fresh machine without plugin configuration, supply the selected token field:
+
+```sh
+./bin/provision-github-auth 'op://vault/item/token'
+```
+
+The command streams the token into `gh auth login --with-token` without printing
+it, writing an intermediate token file, or exporting it to the parent shell.
+GitHub CLI owns storage in the native credential store, with its standard local
+file fallback when no credential store is available. Existing local accounts
+are preserved; importing over one requires a separate explicit logout first.
+The current Git protocol and existing Git credential helpers remain unchanged.
+
+The old `gh` shim is retired. Provisioning and ordinary `apply` remove only
+`~/.local/bin/gh` symlinks pointing to this checkout's former shim, including a
+dangling link after an update. Other files and symlinks remain untouched. Shells,
+Claude Code, Codex, and scripts use the native `gh` binary and its local login;
+ordinary apply and doctor inspect only local account metadata without reading
+tokens, contacting GitHub, or querying 1Password.
 
 ## macOS developer prerequisites
 
@@ -285,6 +338,8 @@ bin/update             conservative checkout update + apply
 bin/doctor             read-only diagnostics
 bin/adopt              inspection-only ownership transition scaffold
 bin/onboard            guided, explicitly confirmed first-run actions
+bin/provision-ssh-key  explicit one-time local SSH/signing key export
+bin/provision-github-auth  explicit one-time local GitHub CLI token import
 lib/                   paths, platform, actions, files, packages, state
 config/                fully managed or included application configuration
 shell/                 cheap shared and shell-specific startup fragments
@@ -300,3 +355,8 @@ details and [docs/research.md](docs/research.md) for the upstream decisions.
 Syntax-check changed shell scripts with `bash -n` (and `zsh -n` for Zsh
 fragments). Exercise reconciliation changes through `./bin/apply --dry-run` so
 the live machine remains unchanged while reviewing the plan.
+Run `bash tests/platform.sh`, `bash tests/ssh.sh`, `bash tests/github.sh`,
+`bash tests/onboarding.sh`, and `bash tests/setup.sh` for platform detection,
+local credential provisioning, and first-run orchestration regression checks.
+Credential tests use placeholders instead of real keys or tokens and do not
+access 1Password.

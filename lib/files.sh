@@ -94,7 +94,7 @@ managed_block_text() {
 }
 
 ensure_source_block() {
-  local destination="$1" block_id="$2" content="$3" label="${4:-}" comment_prefix="${5:-#}" pretty
+  local destination="$1" block_id="$2" content="$3" label="${4:-}" comment_prefix="${5:-#}" position="${6:-append}" pretty
   local start end start_count end_count expected current temp mode
   pretty="$(dotfiles_pretty_path "$destination")"
   [[ -n "$label" ]] || label="$pretty"
@@ -120,7 +120,7 @@ ensure_source_block() {
         capture { print }
         $0 == end && capture { exit }
       ' "$destination")"
-      if [[ "$current" == "$expected" ]]; then
+      if [[ "$current" == "$expected" && ( "$position" != "prepend" || "$(head -n 1 "$destination")" == "$start" ) ]]; then
         report_add unchanged "$pretty ($block_id block)"
         return 0
       fi
@@ -147,7 +147,14 @@ ensure_source_block() {
       mode="$(stat -c '%a' "$destination")"
     fi
 
-    if [[ "$start_count" == "1" ]]; then
+    if [[ "$position" == "prepend" ]]; then
+      printf '%s\n' "$expected" >"$temp"
+      awk -v start="$start" -v end="$end" '
+        $0 == start { skipping=1; next }
+        skipping && $0 == end { skipping=0; next }
+        !skipping { print }
+      ' "$destination" >>"$temp"
+    elif [[ "$start_count" == "1" ]]; then
       DOTFILES_BLOCK_REPLACEMENT="$expected" awk -v start="$start" -v end="$end" '
         $0 == start {
           count=split(ENVIRON["DOTFILES_BLOCK_REPLACEMENT"], lines, "\n")

@@ -72,10 +72,6 @@ desired_macos_state() {
 }
 
 desired_managed_files() {
-  declare_managed_file "gh-shim" \
-    "$DOTFILES_ROOT/config/bin/gh" \
-    "$HOME/.local/bin/gh" \
-    "1Password-backed GitHub CLI shim"
   declare_managed_file "mise" \
     "$DOTFILES_ROOT/config/mise/config.toml" \
     "$DOTFILES_CONFIG_HOME/mise/config.toml" \
@@ -243,10 +239,8 @@ desired_git_includes() {
   declare_git_include "$HOME/.gitconfig.local" "$machine_config"
 }
 
-desired_git_signing_guidance() {
-  if ! git config --global --get user.signingKey >/dev/null 2>&1; then
-    report_manual "In 1Password, open the SSH key to use for Git, choose Configure Commit Signing, and save its public key as user.signingKey"
-  fi
+desired_local_ssh() {
+  ensure_local_ssh || true
 }
 
 desired_shell_blocks() {
@@ -287,10 +281,12 @@ reconcile_desired_state() {
   desired_packages
   desired_directories
   desired_managed_files
+  ensure_legacy_github_shim_absent "$HOME/.local/bin/gh" || true
   desired_static_completions
   desired_mise_tools
   desired_git_includes
-  desired_git_signing_guidance
+  desired_local_ssh
+  ensure_local_github_auth
   desired_shell_blocks
   desired_omarchy_keyboard
   desired_macos_state

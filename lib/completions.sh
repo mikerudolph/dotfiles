@@ -11,12 +11,6 @@ completion_command_path() {
     candidate="$path_entry/$command_name"
     [[ -x "$candidate" && ! -d "$candidate" ]] || continue
 
-    # The managed gh shim delegates through 1Password and must never be used
-    # to generate public shell-completion code. Find the package-manager binary
-    # later on PATH instead.
-    if [[ "$command_name" == "gh" && "$candidate" == "$HOME/.local/bin/gh" ]]; then
-      continue
-    fi
     IFS="$old_ifs"
     printf '%s\n' "$candidate"
     return 0

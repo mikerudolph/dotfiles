@@ -7,6 +7,9 @@ export DOTFILES_ROOT
 source "$DOTFILES_ROOT/lib/paths.sh"
 source "$DOTFILES_ROOT/lib/platform.sh"
 source "$DOTFILES_ROOT/lib/onepassword.sh"
+source "$DOTFILES_ROOT/lib/ssh.sh"
+source "$DOTFILES_ROOT/lib/github.sh"
+source "$DOTFILES_ROOT/lib/onboarding.sh"
 
 dry_run=0
 while (( $# > 0 )); do
@@ -15,7 +18,8 @@ while (( $# > 0 )); do
     -h|--help)
       echo "Usage: bin/onboard [--dry-run]"
       echo
-      echo "Inspect interactive first-run tasks on both supported platforms."
+      echo "Provision missing local SSH/GitHub credentials from selected 1Password references on both platforms."
+      echo "Dry-run only reports pending tasks and never reads a vault."
       echo "On macOS, a confirmed non-dry run can complete Xcode first-launch setup."
       exit 0
       ;;
@@ -98,6 +102,9 @@ if git config --global --get user.signingKey >/dev/null 2>&1; then
 else
   onboard_status "Git signing key" "not configured"
 fi
+echo
+
+onboard_local_credentials
 echo
 
 case "${OS:-}:${FLAVOR:-}" in

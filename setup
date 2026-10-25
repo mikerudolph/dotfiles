@@ -28,13 +28,22 @@ if ! onepassword_desktop_present; then
 fi
 
 bootstrap_package_backend "$dry_run"
+apply_status=0
 if [[ "$dry_run" == "1" ]]; then
-  apply_status=0
   "$DOTFILES_ROOT/bin/apply" --dry-run || apply_status=$?
-  echo
-  "$DOTFILES_ROOT/bin/onboard" --dry-run
-  exit "$apply_status"
 else
-  "$DOTFILES_ROOT/bin/apply"
-  exec "$DOTFILES_ROOT/bin/onboard"
+  "$DOTFILES_ROOT/bin/apply" || apply_status=$?
 fi
+# Safe file conflicts do not prevent independent first-run credential work.
+# Preserve apply's conflict status after onboarding, and stop on fatal errors.
+case "$apply_status" in
+  0|3) ;;
+  *) exit "$apply_status" ;;
+esac
+echo
+if [[ "$dry_run" == "1" ]]; then
+  "$DOTFILES_ROOT/bin/onboard" --dry-run
+else
+  "$DOTFILES_ROOT/bin/onboard"
+fi
+exit "$apply_status"

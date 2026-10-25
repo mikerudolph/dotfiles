@@ -26,6 +26,16 @@ manual 1Password Desktop install + sign-in
 On an existing machine, `git pull --ff-only` (or `bin/update`) leads directly to
 the same `apply`. There is no second installer implementation.
 
+On both platforms, setup runs guided onboarding after successful reconciliation
+or safe file conflicts (exit 3); it preserves the conflict exit status afterward.
+Fatal apply errors stop setup. Onboarding offers missing SSH/signing-key and
+GitHub-token provisioning by asking for explicit 1Password field references and
+invoking the standalone provisioning commands. Existing local credentials are
+skipped; existing conflicting key files are left alone. A blank response skips a
+step, and non-interactive runs print the manual command instead. Dry-run reports
+the same pending steps without reading references, querying vaults, or writing
+credentials. Desktop authentication and CLI integration approval remain manual.
+
 All entry points derive the repository root from their script location. `paths.sh`
 centralizes XDG config, data, state, and cache locations without exporting new XDG
 defaults into the user's environment.
@@ -75,10 +85,25 @@ They run through the canonical reconciler, so `setup` does not have a separate o
 one-time preferences path.
 
 Git composition is ordered common → platform → machine-local. Common behavior
-and aliases live in the repository; macOS supplies the 1Password application
-signer path; and the optional `~/.gitconfig.local` include has final precedence.
-The signing public key is never inferred from 1Password or inventory data and
-must be selected locally before signed commits can succeed.
+and aliases live in the repository; the optional `~/.gitconfig.local` include has
+final precedence. Local SSH provisioning adds a bounded block there selecting
+OpenSSH's `ssh-keygen` signer and the local private-key path. Credential helpers
+and unrelated local settings are preserved.
+
+`bin/provision-ssh-key` is an explicit, one-time credential operation, separate
+from ordinary reconciliation. The user selects a 1Password private-key field
+reference. The CLI exports OpenSSH format directly into a mode-600 staging file
+under `~/.ssh`, validates that the key is usable without a passphrase, derives
+the public key, and publishes both without replacing existing files. Staging is
+removed on exit. No secret values enter shell variables, reports, or the checkout.
+The installed private key remains machine-local at `~/.ssh/id_dotfiles`.
+
+Once that key exists with owner-only permissions, `apply` reconciles the exact
+SSH and Git signing blocks. The SSH block is prepended because OpenSSH uses the
+first scalar value; it selects the local identity and disables authentication
+agents even if a later unmanaged entry selects 1Password. Other file content is
+preserved. A missing key is a manual provisioning action. Doctor, ordinary apply,
+and shell startup never fetch vault contents or export keys.
 
 Control Center settings that macOS stores per host use the same typed primitive
 with `defaults -currentHost`. Workspace shortcuts are merged one dictionary entry
@@ -111,12 +136,23 @@ installer and reconciles it when needed; it never assumes a processor prefix.
 The portable shell layer activates mise for both Zsh and Bash when available;
 this is local shell initialization only and performs no installation or update.
 
-The managed `~/.local/bin/gh` shim is deliberately a real executable rather than
-an interactive-shell alias, so agent TUIs and scripts resolve it too. It removes
-its own directory from `PATH` before delegating to `op plugin run -- gh`, which
-prevents recursion and limits the GitHub token to the real `gh` process. Package
-reconciliation ignores this managed shim when checking whether the underlying
-GitHub CLI is installed.
+GitHub CLI runs directly and owns its machine-local authentication.
+`bin/provision-github-auth` is an explicit one-time import from either the
+currently selected 1Password GitHub plugin credential or an explicit token field
+reference. A pipe carries the token into native `gh auth login --with-token`;
+it never enters a shell variable, temporary file, command argument, or parent
+environment. GitHub CLI selects its native credential store or standard local
+file fallback. Provisioning rejects storage inside the checkout, symlinked
+credential files, and replacement of an existing local account. It preserves
+the configured Git protocol and never runs `gh auth setup-git`, so existing
+Git credential helpers remain local.
+
+The retired GitHub CLI shim is removed only when `~/.local/bin/gh` is the exact
+absolute symlink older apply versions created to this checkout's `config/bin/gh`.
+This check also recognizes dangling links after the tracked shim is deleted.
+Unmanaged executables and other symlinks are left alone. Dry-run uses the same
+removal function without unlinking. Ordinary apply and doctor check local account
+metadata only, without reading a token, contacting GitHub, or querying a vault.
 
 The macOS-only Tokyo Night layer uses the same ownership split. Complete
 declarative files (Starship, eza's theme, the K9s skin, mactop and Glow themes,
@@ -162,11 +198,11 @@ dotfiles to inspect vaults or bypass desktop security controls.
 
 - Remaining GUI application, font, alias, and tool selections not yet approved
   from the inventory.
-- Additional Neovim/LazyVim choices, agent, SSH, and service configuration.
+- Additional Neovim/LazyVim choices, SSH host rules, and service configuration.
 - Additional macOS defaults, LaunchAgents, permissions, and security settings.
 - Omarchy Hyprland, autostart, and hook customizations.
-- Actual secret references, 1Password shell plugins, SSH agent, and credential
-  workflows.
+- Actual secret references remain machine-local; further credential workflows
+  require explicit choices.
 - Package upgrades/removals, old runtime-manager cleanup, and the explicit future
   NVM-to-mise migration.
 - Mutating adoption (backup/import/replace) and the first real migration.
