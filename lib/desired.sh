@@ -55,6 +55,7 @@ desired_mise_tools() {
   declare_mise_tool "Ruby" ruby latest
   declare_mise_tool "Rust" rust stable
   declare_mise_tool "Terraform" terraform latest
+  declare_mise_tool "Herdr" herdr latest
 }
 
 desired_macos_state() {

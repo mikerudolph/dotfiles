@@ -37,7 +37,7 @@ bat, glow, GitHub CLI, ffmpeg, AWS CLI, Neovim, lazygit, lazydocker, k9s,
 Starship, zoxide, eza, fzf, and kubectl. macOS additionally gets mactop and the
 two Zsh enhancement plugins. Omarchy additionally installs Tailscale and
 Dropbox through its supported package helper. Node LTS, Bun, pnpm, Go, Python,
-Ruby, Rust, and Terraform are declared through mise rather than the native
+Ruby, Rust, Terraform, and Herdr are declared through mise rather than the native
 package manager.
 
 On macOS, the selected application layer installs Alacritty, Docker Desktop,
