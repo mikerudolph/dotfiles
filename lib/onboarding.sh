@@ -46,6 +46,12 @@ onboard_local_credentials() {
     onboard_provision_reference "SSH private key" provision-ssh-key 'private key' || return 1
   fi
 
+  if git config --global --includes --get user.signingKey >/dev/null 2>&1; then
+    onboard_status "Git signing key" "configured"
+  else
+    onboard_status "Git signing key" "not configured"
+  fi
+
   executable="$(github_cli_path 2>/dev/null || true)"
   if [[ -z "$executable" ]]; then
     onboard_status "GitHub CLI account" "GitHub CLI missing (run setup/apply)"

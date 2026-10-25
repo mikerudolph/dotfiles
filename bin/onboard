@@ -97,11 +97,6 @@ if command -v op >/dev/null 2>&1; then
 else
   onboard_status "1Password CLI" "missing (run setup/apply)"
 fi
-if git config --global --get user.signingKey >/dev/null 2>&1; then
-  onboard_status "Git signing key" "configured"
-else
-  onboard_status "Git signing key" "not configured"
-fi
 echo
 
 onboard_local_credentials

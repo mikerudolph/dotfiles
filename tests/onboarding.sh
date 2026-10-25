@@ -12,6 +12,10 @@ mkdir "$test_directory/bin"
 export TEST_CREDENTIAL_CALLS="$test_directory/calls"
 export TEST_LOCAL_SSH_KEY="$test_directory/local-key"
 export TEST_GITHUB_STATE="$test_directory/github-state"
+export TEST_GIT_SIGNING_FILE="$test_directory/gitconfig.local"
+export GIT_CONFIG_GLOBAL="$test_directory/gitconfig"
+export GIT_CONFIG_NOSYSTEM=1
+git config --file "$GIT_CONFIG_GLOBAL" include.path "$TEST_GIT_SIGNING_FILE"
 
 # Synthetic provisioning stubs; no real keys, tokens, or vault access.
 cat > "$test_directory/bin/provision-ssh-key" <<'SH'
@@ -21,6 +25,7 @@ set -eu
 printf 'ssh\n' >> "$TEST_CREDENTIAL_CALLS"
 printf 'mock-key-placeholder\n' > "$TEST_LOCAL_SSH_KEY"
 chmod 600 "$TEST_LOCAL_SSH_KEY"
+git config --file "$TEST_GIT_SIGNING_FILE" user.signingKey "$TEST_LOCAL_SSH_KEY"
 SH
 cat > "$test_directory/bin/provision-github-auth" <<'SH'
 #!/usr/bin/env bash
@@ -50,6 +55,7 @@ test_interactive=1
 onboard_local_credentials > "$test_directory/dry-run-output"
 rg -q 'run bin/provision-ssh-key' "$test_directory/dry-run-output"
 rg -q 'run bin/provision-github-auth' "$test_directory/dry-run-output"
+rg -q 'Git signing key: not configured' "$test_directory/dry-run-output"
 [[ ! -e "$TEST_CREDENTIAL_CALLS" && ! -e "$TEST_LOCAL_SSH_KEY" && ! -e "$TEST_GITHUB_STATE" ]]
 echo 'PASS: first-run dry-run describes both provisions without reading a vault or creating credentials'
 
@@ -67,11 +73,17 @@ op://test/item/private key
 op://test/item/token
 INPUT
   [[ "$(cat "$TEST_CREDENTIAL_CALLS")" == $'ssh\ngithub' ]]
+  rg -q 'Git signing key: configured' "$test_directory/interactive-output"
+  if rg -q 'Git signing key: not configured' "$test_directory/interactive-output"; then exit 1; fi
+  if git config --global --get user.signingKey > /dev/null 2>&1; then exit 1; fi
+  [[ "$(git config --global --includes --get user.signingKey)" == "$TEST_LOCAL_SSH_KEY" ]]
   onboard_local_credentials > "$test_directory/repeated-output" < /dev/null
+  rg -q 'Git signing key: configured' "$test_directory/repeated-output"
   [[ "$(cat "$TEST_CREDENTIAL_CALLS")" == $'ssh\ngithub' ]]
-  rm "$TEST_CREDENTIAL_CALLS" "$TEST_LOCAL_SSH_KEY" "$TEST_GITHUB_STATE"
+  rm "$TEST_CREDENTIAL_CALLS" "$TEST_LOCAL_SSH_KEY" "$TEST_GITHUB_STATE" "$TEST_GIT_SIGNING_FILE"
 done
 echo 'PASS: both platforms provision selected references once and skip completed credentials on reruns'
+echo 'PASS: signing status is checked after provisioning and follows global Git includes on first runs and reruns'
 
 onboard_local_credentials > "$test_directory/skipped-output" <<'INPUT'
 
