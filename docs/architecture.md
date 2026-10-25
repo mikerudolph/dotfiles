@@ -42,11 +42,14 @@ DISTRO=arch
 FLAVOR=omarchy
 ```
 
-Darwin is macOS. Linux identity comes from `/etc/os-release`. Omarchy requires an
-Arch base plus the current package-backed installation evidence: its executable
+Darwin is macOS. Linux identity comes from `/etc/os-release`; `ID=arch` and
+`ID=omarchy` both normalize to the Arch base. Omarchy also requires the current
+package-backed installation evidence: its executable
 under `/usr/share/omarchy/bin`, or both the upstream directory and an `omarchy`
 command on `PATH`. Generic Arch is detected accurately but rejected because it is
-not a supported target. Detection inputs are injectable for tests.
+not a supported target. Other Arch derivatives remain unsupported. Detection
+inputs are injectable for tests; run the regression checks with
+`bash tests/platform.sh`.
 
 ## Reconciliation contract
 

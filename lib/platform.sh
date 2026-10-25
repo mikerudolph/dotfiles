@@ -27,11 +27,13 @@ platform_detect() {
       # os-release is a platform-owned shell-compatible data file.
       # shellcheck disable=SC1090
       source "$os_release"
-      if [[ "${ID:-}" == "arch" ]]; then
-        DISTRO="arch"
-      else
-        DISTRO="${ID:-unknown}"
-      fi
+      # Omarchy can identify itself directly instead of retaining ID=arch.
+      # Normalize only these supported identities; other Arch derivatives
+      # remain unsupported even when they advertise ID_LIKE=arch.
+      case "${ID:-}" in
+        arch|omarchy) DISTRO="arch" ;;
+        *) DISTRO="${ID:-unknown}" ;;
+      esac
 
       if [[ "$DISTRO" == "arch" ]]; then
         omarchy_root="${DOTFILES_TEST_OMARCHY_ROOT:-/usr/share/omarchy}"
